@@ -16,5 +16,12 @@
   "action": {
     // "default_popup": "index.html"
     "default_title": "Open Job Tracker"
-  }
+  },
+  // not sure about this yet
+  "web_accessible_resources": [
+    {
+      "resources": ["*.html", "*.css", "*.png"],
+      "matches": ["https://www.linkedin.com/*"]
+    }
+  ]
 }

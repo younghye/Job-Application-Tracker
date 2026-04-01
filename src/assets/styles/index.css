@@ -44,27 +44,34 @@ table {
 th,
 td {
   /* padding: 14px 16px; */
-  padding: 8px 10px;
+  padding: 4px 10px;
   text-align: left;
   font-size: 14px;
   border: 1px solid #dadbdd;
+  /* overflow: hidden;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
+  text-overflow: ellipsis; */
+}
+table td div {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
 }
 
 th {
-  background-color: #e6e7e7;
+  background-color: black;
   font-weight: 600;
+  color: white;
   /* color: #4b5563; */
   cursor: pointer;
   /* user-select: none; */
   /* transition: background 0.5s; */
 }
 
-th:hover {
+/* th:hover {
   background-color: #dadbdd;
-}
+} */
 
 tr:last-child td {
   border-bottom: none;
@@ -74,25 +81,20 @@ tr:hover {
   background-color: #f9fafb;
 }
 
-/* Text and Links */
-/* .text-bold {
-  font-weight: 600;
-  color: #111827;
-} */
-
 .truncate-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap; /* Prevents text from wrapping to the next line */
   max-width: 100%; /* Or a specific width for the column/cell */
+  max-width: 0;
 }
 
-.url-truncated a {
+.url a {
   color: #2563eb;
   text-decoration: none;
 }
 
-.url-truncated a:hover {
+.url a:hover {
   text-decoration: underline;
 }
 
@@ -100,7 +102,7 @@ tr:hover {
 .status-select {
   width: 100%;
   max-width: 100%;
-  padding: 6px 10px;
+  padding: 4px 9px;
   box-sizing: border-box;
   border: 1px solid #dadbdd;
   border-radius: 6px;
@@ -129,4 +131,92 @@ tr:hover {
 .delete-btn:hover {
   opacity: 2;
   /* transform: scale(1.1); */
+}
+
+/* modal styles */
+.modal-input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.modal-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn-primary {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.error-message {
+  color: red;
+}
+/* The background dimming */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex; /* Centers the modal content */
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+/* The white box */
+.modal-content {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 450px;
+  outline: none; /* Removes the default yellow focus border */
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Make sure the text inside the modal looks right */
+.modal-content h2 {
+  margin-top: 0;
+  font-size: 1.25rem;
+  color: #111827;
 }

@@ -1,4 +1,5 @@
 import type { JobApplication } from "./types/job";
+
 const JOB_PATTERNS = [
   "/job",
   "/jobs",
@@ -11,18 +12,11 @@ const JOB_PATTERNS = [
   "linkedin.com/jobs",
 ];
 
-/**
- * Checks if the current URL matches common job board patterns
- */
 function isJobPage(url: string): boolean {
   return JOB_PATTERNS.some((p) => url.toLowerCase().includes(p));
 }
 
-/**
- * Injects the floating button into the DOM
- */
 function injectButton() {
-  // Prevent duplicate buttons
   if (document.getElementById("jobTrackerBtn")) return;
 
   const btn = document.createElement("button");
@@ -37,7 +31,7 @@ function injectButton() {
     transform: "translateY(-50%)",
     zIndex: "2147483647",
     padding: "12px 20px",
-    background: "#f59e0b", // LinkedIn Green style
+    background: "#f59e0b",
     color: "white",
     borderRadius: "25px",
     cursor: "pointer",
@@ -48,47 +42,42 @@ function injectButton() {
   });
   btn.addEventListener("click", () => {
     try {
-      console.log("Button clicked!"); // See if the click even registers
-
       const jobTitle =
         document.querySelector("h1")?.innerText.trim() || document.title;
       const company = detectCompany();
-      const url = window.location.href;
+      const link = window.location.href;
 
-      // Check if the data is actually useful
-      const isInvalid = !jobTitle || !url || url.includes("about:blank");
+      const isInvalid =
+        !jobTitle || !company || !link || link.includes("about:blank");
 
       if (isInvalid) {
-        alert(
-          "⚠️ Could not detect job details. Please ensure you are on a job description page.",
-        );
-        console.warn("Validation Failed:", { jobTitle, company, url });
-        return; // Stop execution here
+        alert("⚠️ Could not detect job details. Please add manually.");
+        console.warn("Validation Failed:", { jobTitle, company, link });
+        return;
       }
 
       const jobData: JobApplication = {
         id: crypto.randomUUID(),
         jobTitle,
         company,
-        url,
+        link: link,
         date: new Date().toISOString().split("T")[0],
         status: "Applied",
       };
-
       console.log("🎯 Tracking Job:", jobData);
 
-      chrome.storage.local.get(["applicationList"], async (result) => {
-        const list = (result.applicationList as JobApplication[]) || [];
-        list.push(jobData);
-        chrome.storage.local.set({ applicationList: list }, () => {
-          // Visual feedback for success
-          // btn.style.background = "#10b981"; // Green
-          // btn.innerText = "✅ Saved!";
-          btn.style.background = "#057642";
-          btn.innerText = "✓ Saved";
-          console.log("🎯 Job Saved Successfully:", jobData);
-        });
-      });
+      // Send the "package" to the background script
+      chrome.runtime.sendMessage(
+        { action: "SAVE_JOB", data: jobData },
+        (response) => {
+          if (response.success) {
+            updateButtonState(response.success);
+            if (response.existed) {
+              alert("This job is already in your list.");
+            }
+          }
+        },
+      );
     } catch (error) {
       console.error("❌ Click Handler Crashed:", error);
       alert("An error occurred while saving. Check the console for details.");
@@ -98,87 +87,111 @@ function injectButton() {
   document.body.appendChild(btn);
 }
 
-/**
- * Basic company detection based on common site selectors
- */
 function detectCompany(): string {
   const selectors = [
-    '[class*="companyName"]',
+    // --- 1. Site-Specific High Confidence ---
+    ".main-header-logo img", // Lever (Check ALT attribute)
+    ".logo img", // Greenhouse (Check ALT attribute)
     '[data-automation="advertiser-name"]', // Seek
+    ".job-details-jobs-unified-top-card__company-name", // LinkedIn
+    ".jobs-unified-top-card__company-name", // LinkedIn
+
+    // --- 2. Common Data Attributes & Classes ---
+    '[class*="companyName"]',
+    '[class*="company-name"]',
+    '[class*="hiring-organization"]',
+    'a[href*="/company/"]',
+    'a[aria-label^="Company,"]',
+
+    // --- 3. Meta Tags (Hidden in <head>) ---
     "meta[property='og:site_name']",
-    // LinkedIn specific
-    ".job-details-jobs-unified-top-card__company-name",
-    ".jobs-unified-top-card__company-name",
-    ".job-details-public-header-v2__company-name",
-    ".company-name",
-    ".hiring-organization",
+    "meta[name='twitter:title']", // Often contains "Job at Company"
   ];
 
   for (const selector of selectors) {
-    const el = document.querySelector(selector);
-    if (el)
-      return (
-        el instanceof HTMLMetaElement
-          ? el.content
-          : (el as HTMLElement).innerText
-      ).trim();
+    const element = document.querySelector(selector);
+    if (element) {
+      let text = "";
+
+      // Special handling for Images (Lever/Greenhouse)
+      if (element.tagName === "IMG") {
+        text = element.getAttribute("alt") || "";
+      }
+      // Special handling for Meta tags
+      else if (element.tagName === "META") {
+        text = element.getAttribute("content") || "";
+      }
+      // Standard elements
+      else {
+        text = (element as HTMLElement).innerText || "";
+      }
+
+      // --- CLEANING LOGIC ---
+      text = text
+        .split("\n")[0] // Get first line only
+        .replace(/Company, |at | - Senior| - Junior/gi, "") // Remove prefixes/suffixes
+        .replace(/Logos?|Logo/gi, "") // Remove common "Logo" text from ALT tags
+        .trim();
+
+      if (text && text.length > 1) return text;
+    }
   }
+
+  // --- 4. ULTIMATE FALLBACK: Document Title ---
+  // Many sites follow "Job Title - Company Name | Site"
+  const titleParts = document.title.split(/[-|]/);
+  if (titleParts.length > 1) {
+    // Usually the company is the first or second part
+    const potentialCompany = titleParts[0].trim();
+    if (potentialCompany && potentialCompany.length > 2)
+      return potentialCompany;
+  }
+
   return "";
 }
 
-/**
- * Observes URL changes for SPAs (LinkedIn/Seek)
- */
-// function observeNavigation() {
-//   let lastUrl = location.href;
+const updateButtonState = (isSaved: boolean) => {
+  const btn = document.getElementById("jobTrackerBtn") as HTMLButtonElement;
+  if (!btn) return;
 
-//   // Use a MutationObserver to catch internal navigation
-//   const observer = new MutationObserver(() => {
-//     if (location.href !== lastUrl) {
-//       lastUrl = location.href;
-//       console.log("🔗 Navigation detected:", lastUrl);
+  btn.innerText = isSaved ? "✓ Saved" : "Add to Applied List";
+  btn.disabled = isSaved;
+  btn.style.backgroundColor = isSaved ? "#057642" : "#f59e0b";
+};
 
-//       // Clean up old button if it exists
-//       document.getElementById("jobTrackerBtn")?.remove();
+function observeNavigation() {
+  let lastUrl = location.href;
 
-//       if (isJobPage(lastUrl)) {
-//         setTimeout(injectButton, 1000); // Wait for AJAX content to load
-//       }
+  const observer = new MutationObserver(() => {
+    if (location.href !== lastUrl) {
+      lastUrl = location.href;
+      syncJobTrackerUI(lastUrl);
+    }
+  });
 
-//       // Check for success page
-//       // if (lastUrl.includes("success") || lastUrl.includes("thank")) {
-//       //   handleSuccess();
-//       // }
-//     }
-//   });
+  observer.observe(document.querySelector("body")!, {
+    subtree: true,
+    childList: true,
+  });
+}
 
-//   observer.observe(document.querySelector("body")!, {
-//     subtree: true,
-//     childList: true,
-//   });
-// }
+const syncJobTrackerUI = (url: string) => {
+  const btn = document.getElementById("jobTrackerBtn");
+  if (isJobPage(url)) {
+    if (!btn) injectButton();
 
-// function handleSuccess() {
-//   chrome.storage.local.get(["currentTracking"], (result) => {
-//     if (result.currentTracking) {
-//       const data = { ...result.currentTracking, status: "Applied" };
-//       console.log("✅ Success! Job saved:", data);
-
-//       // Here you would send data to your actual Database/Backend
-//       // chrome.runtime.sendMessage({ type: "SAVE_TO_DB", data });
-
-//       const btn = document.getElementById("jobTrackerBtn");
-//       if (btn) {
-//         btn.style.background = "#10b981";
-//         btn.innerText = "Saved!";
-//       }
-//     }
-//   });
-// }
-
+    chrome.runtime.sendMessage(
+      { action: "CHECK_IF_SAVED", url: url },
+      (response) => {
+        updateButtonState(response.isSaved);
+      },
+    );
+  } else {
+    if (btn) btn.remove();
+  }
+};
 // Start the script
 console.log("🚀 Job Tracker Extension Active");
-if (isJobPage(window.location.href)) {
-  injectButton();
-}
-// observeNavigation();
+
+syncJobTrackerUI(window.location.href);
+observeNavigation();
