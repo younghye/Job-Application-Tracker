@@ -1,6 +1,6 @@
 import Modal from "react-modal";
-import type { JobApplication } from "../../types/job";
-import "../../assets/styles/index.css";
+import type { JobApplication, JobApplicationFormData } from "../../types/job";
+import "../../assets/styles/modal.css";
 import { useForm } from "react-hook-form";
 import type { SubmitHandler } from "react-hook-form";
 import { STATUS_OPTIONS } from "../../types/job";
@@ -8,32 +8,40 @@ import { STATUS_OPTIONS } from "../../types/job";
 // Make sure to bind modal to your appElement (usually #root or #app)
 Modal.setAppElement("#root");
 
-interface EditModalProps {
+interface UpsertModalProps {
   job: JobApplication | null;
   onClose: () => void;
-  onUpdate: (updatedJob: JobApplication) => void;
+  onUpsert: (job: JobApplication) => void;
 }
 
-const EditModal = ({ job, onClose, onUpdate }: EditModalProps) => {
+const UpsertModal = ({ job, onClose, onUpsert }: UpsertModalProps) => {
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<JobApplication>();
-  const onSubmit: SubmitHandler<JobApplication> = (data) => {
+  } = useForm<JobApplicationFormData>();
+
+  const onSubmit: SubmitHandler<JobApplicationFormData> = (data) => {
     if (job) {
-      onUpdate({ ...job, ...data });
+      // Update existing
+      onUpsert({ ...job, ...data });
+    } else {
+      // Insert new
+      const newJob: JobApplication = {
+        id: crypto.randomUUID(),
+        ...data,
+      };
+      onUpsert(newJob);
     }
     onClose();
   };
 
   return (
     <Modal
-      isOpen={!!job}
+      isOpen={true}
       onRequestClose={onClose}
       overlayClassName="modal-overlay"
       className="modal-content"
-      contentLabel="Edit Job Application"
     >
       <div
         className="modal-header"
@@ -43,7 +51,9 @@ const EditModal = ({ job, onClose, onUpdate }: EditModalProps) => {
           marginBottom: "20px",
         }}
       >
-        <h2 style={{ margin: 0, fontSize: "1.25rem" }}>Edit Application</h2>
+        <h2 style={{ margin: 0, fontSize: "1.25rem" }}>
+          {job ? "Edit Job Application" : "Add Job Application"}
+        </h2>
         <button
           onClick={onClose}
           style={{
@@ -138,7 +148,7 @@ const EditModal = ({ job, onClose, onUpdate }: EditModalProps) => {
             Cancel
           </button>
           <button type="submit" className="btn-primary">
-            Save Changes
+            Save
           </button>
         </div>
       </form>
@@ -146,4 +156,4 @@ const EditModal = ({ job, onClose, onUpdate }: EditModalProps) => {
   );
 };
 
-export default EditModal;
+export default UpsertModal;

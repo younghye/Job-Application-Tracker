@@ -1,6 +1,6 @@
 import { flexRender } from "@tanstack/react-table";
 import type { JobApplication } from "../../types/job";
-import "../../assets/styles/index.css";
+import "../../assets/styles/table.css";
 import { useState } from "react";
 import {
   getCoreRowModel,
@@ -36,7 +36,7 @@ const Table = ({
     onPaginationChange: setPagination,
   });
   return (
-    <div>
+    <div className="table-wrapper">
       <table>
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (
@@ -72,7 +72,6 @@ const Table = ({
               }}
             >
               {row.getVisibleCells().map((cell) => {
-                // Access the custom meta flag we just created
                 const isTruncated = (cell.column.columnDef.meta as any)
                   ?.truncate;
 
@@ -94,16 +93,13 @@ const Table = ({
         </tbody>
       </table>
 
-      {/* --- Footer Section --- */}
       <div className="flex items-center justify-between mt-4">
-        {/* Left Side: Showing Status */}
         <div className="text-sm text-gray-600">
           Showing{" "}
           <strong>{table.getRowModel().rows.length.toLocaleString()}</strong> of{" "}
           <strong>{table.getRowCount().toLocaleString()}</strong> Rows
         </div>
 
-        {/* Right Side: Pagination Controls */}
         <div className="flex items-center gap-2">
           <span className="flex items-center gap-1 mr-4 text-sm">
             <div>Page</div>

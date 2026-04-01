@@ -1,7 +1,7 @@
 const Dashboard = () => {
   return (
-    <div className="dashboard-container">
-      <header className="dashboard-header">
+    <div>
+      <header>
         <h1>🚀 Job Application Dashboard</h1>
         {/* <button
           type="button"

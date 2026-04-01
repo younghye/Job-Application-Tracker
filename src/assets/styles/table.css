@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 6px;
+}
+
+table {
+  min-width: 950px;
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #dadbdd;
+  table-layout: fixed;
+}
+
+th,
+td {
+  padding: 4px 10px;
+  text-align: left;
+  font-size: 14px;
+  border: 1px solid #dadbdd;
+}
+
+th {
+  background-color: black;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+tr:hover {
+  background-color: #f9fafb;
+}
+
+.truncate-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  max-width: 0;
+}
+
+.url a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.url a:hover {
+  text-decoration: underline;
+}
+
+.status-select {
+  width: 100%;
+  max-width: 100%;
+  padding: 4px 9px;
+  box-sizing: border-box;
+  border: 1px solid #dadbdd;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.delete-btn {
+  cursor: pointer;
+  font-size: 18px;
+  opacity: 1;
+  transition:
+    opacity 0.2s,
+    transform 0.1s;
+}
+
+.delete-btn:hover {
+  opacity: 2;
+}

@@ -8,6 +8,8 @@ export interface JobApplication {
   note?: string;
 }
 
+export type JobApplicationFormData = Omit<JobApplication, "id">;
+
 export const STATUS_OPTIONS = [
   "Applied",
   "Interviewing",

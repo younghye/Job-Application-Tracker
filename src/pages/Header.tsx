@@ -4,7 +4,7 @@ const Header = () => {
   return (
     <>
       <div className="w-full p-[50px]">
-        <header className="dashboard-header">
+        <header className="app-header">
           <h1>🚀 Job Application Dashboard</h1>
           <button
             type="button"

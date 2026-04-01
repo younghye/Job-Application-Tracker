@@ -1,7 +1,7 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import type { JobApplication } from "../../types/job";
 import { STATUS_OPTIONS } from "../../types/job";
-import "../../assets/styles/index.css";
+import "../../assets/styles/table.css";
 const columnHelper = createColumnHelper<JobApplication>();
 
 export const getColumns = (

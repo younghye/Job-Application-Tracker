@@ -15,6 +15,7 @@ export default defineConfig({
       },
       output: {
         entryFileNames: "[name].js", // This ensures it's named 'content.js' not 'content-hash.js'
+        extend: true,
       },
     },
     outDir: "dist",
