@@ -1,15 +1,17 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import "../../assets/styles/index.css";
 import type { JobApplication } from "../../types/job";
 import Table from "./Table";
 import UpsertModal from "./UpsertModal";
 import { getColumns } from "./Columns";
 import { isExistJobByUrl, sortJobsByDate } from "../../utils/jobUtils";
+import { exportCSV, importCSV } from "./CsvService";
 
 const ApplicationList = () => {
   const [data, setData] = useState<JobApplication[]>([]);
   const [editData, setEditData] = useState<JobApplication | null>(null);
   const [openModal, setOpenModal] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     chrome.storage.local.get("applicationList", (result) => {
@@ -67,6 +69,15 @@ const ApplicationList = () => {
     setData(upsertData);
   };
 
+  const handleImportCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const sortedData = await importCSV(e, data, columns);
+    await chrome.storage.local.set({ applicationList: sortedData });
+    setData(sortedData);
+
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    alert("Import successful!");
+  };
+
   const openEditModal = (job: JobApplication) => {
     setEditData(job);
     setOpenModal(true);
@@ -81,13 +92,33 @@ const ApplicationList = () => {
     <div>
       <div className="flex justify-end ">
         <div className="flex gap-2 items-center justify-between pb-6">
-          <button onClick={() => {}} className="btn-toolbar-gray">
-            <span>📥</span> Export JSON
+          <button
+            onClick={() => {
+              exportCSV({ data, columns });
+            }}
+            className="btn-toolbar-gray"
+          >
+            <span>📥</span> Export CSV
           </button>
 
-          <button onClick={() => {}} className="btn-toolbar-gray">
-            <span>📤</span> Import
+          <input
+            type="file"
+            accept=".csv"
+            ref={fileInputRef}
+            onChange={handleImportCSV}
+            style={{ display: "none" }}
+          />
+
+          {/* Trigger Import Button */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="btn-toolbar-gray"
+          >
+            <span>📤</span> Import CSV
           </button>
+          {/* <button onClick={() => {}} className="btn-toolbar-gray">
+            <span>📤</span> Import CSV
+          </button> */}
 
           <button
             onClick={() => setOpenModal(true)}
