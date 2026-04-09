@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-.modal-input {
+.input {
   width: 100%;
   padding: 10px;
   margin-top: 5px;
@@ -9,10 +9,25 @@
   box-sizing: border-box;
 }
 
-.modal-input:focus {
+.input:focus {
   outline: none;
   border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+select.input {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  padding: 10px 40px 10px 10px; /* extra right padding for bigger arrow */
+  background-color: white;
+
+  /* Bigger arrow */
+  background-image: url("data:image/svg+xml;utf8,<svg fill='gray' height='28' viewBox='0 0 20 20' width='28' xmlns='http://www.w3.org/2000/svg'><path d='M5.516 7.548l4.484 4.484 4.484-4.484'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 20px; /* increase this to make arrow bigger */
 }
 
 .form-group {
@@ -25,7 +40,7 @@
   color: #374151;
 }
 
-.modal-actions {
+.actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;

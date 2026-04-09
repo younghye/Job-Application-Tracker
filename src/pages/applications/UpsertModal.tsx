@@ -1,6 +1,6 @@
 import Modal from "react-modal";
 import type { JobApplication, JobApplicationFormData } from "../../types/job";
-import "../../assets/styles/modal.css";
+import "../../assets/styles/form.css";
 import { useForm } from "react-hook-form";
 import type { SubmitHandler } from "react-hook-form";
 import { STATUS_OPTIONS } from "../../types/job";

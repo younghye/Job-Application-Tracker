@@ -16,23 +16,77 @@ import type { JobApplication } from "../types/job";
 //   return JOB_PATTERNS.some((p) => url.toLowerCase().includes(p));
 // };
 
-// export const isExistJobByUrl = (
-//   url: string,
-//   list: JobApplication[],
-// ): boolean => {
-//   if (!url) return false;
+export const isExistJobByUrl = (
+  url: string,
+  list: JobApplication[],
+): boolean => {
+  if (!url) return false;
+  /**
+   * Universal ID and Path Extractor
+   */
+  const getUniversalIdentity = (u: string): string => {
+    const lowUrl = u.toLowerCase();
 
-//   // Removes query params, hashes, and trailing slashes for a fair comparison
-//   const clean = (u: string) => u.split("?")[0].split("#")[0].replace(/\/$/, "");
-//   const targetUrl = clean(url);
+    // 1. Target specific platform keys (captured group 1)
+    // We use [a-z0-9_-] because many IDs (Indeed, Greenhouse, Lever) use letters/dashes
+    const platformRegex =
+      /(?:jl=|currentjobid=|jobid=|jk=|gh_jid=|\/job\/|jobs\/|postingid=)([a-z0-9_-]+)/;
+    const platformMatch = lowUrl.match(platformRegex);
 
-//   return list.some((job) => clean(job.link) === targetUrl);
-// };
-export const isExistJobByUrl = (url: string, list: any[]): boolean => {
-  if (!url || !list || list.length === 0) return false;
+    if (platformMatch && platformMatch[1]) {
+      return platformMatch[1];
+    }
 
-  return list.some((job) => job.link === url);
+    // 2. Fallback: Extract the last meaningful segment of the path
+    // Good for: jobs.lever.co/company/ID or workday sites
+    try {
+      const urlObj = new URL(u);
+      const pathSegments = urlObj.pathname
+        .split("/")
+        .filter((s) => s.length > 0);
+
+      if (pathSegments.length > 0) {
+        const lastSegment = pathSegments[pathSegments.length - 1];
+
+        // If the last segment looks like a slug or ID (contains numbers or is long)
+        if (/[0-9]/.test(lastSegment) || lastSegment.length > 5) {
+          return lastSegment;
+        }
+      }
+    } catch (e) {
+      // Fallback if URL constructor fails
+    }
+
+    // 3. Last Resort: Your original cleanup logic
+    return lowUrl
+      .replace(/^https?:\/\/(www\.)?/, "")
+      .split(/[?#]/)[0]
+      .replace(/\/$/, "");
+  };
+
+  const targetIdentity = getUniversalIdentity(url);
+
+  // Security: Ignore generic search pages or roots
+  const genericPages = ["/jobs", "/careers", "index.htm", "search.htm"];
+  if (
+    genericPages.some((p) => targetIdentity.endsWith(p)) ||
+    targetIdentity.length < 10
+  ) {
+    return false;
+  }
+
+  return list.some((job) => {
+    const existingIdentity = String(getUniversalIdentity(job.link));
+    const targetIdentity = String(getUniversalIdentity(url));
+
+    return existingIdentity === targetIdentity;
+  });
 };
+// export const isExistJobByUrl = (url: string, list: any[]): boolean => {
+//   if (!url || !list || list.length === 0) return false;
+
+//   return list.some((job) => job.link === url);
+// };
 // export const detectCompany = (): string => {
 //   const selectors = [
 //     // --- 1. Site-Specific High Confidence ---
