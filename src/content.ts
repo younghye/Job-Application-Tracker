@@ -1,18 +1,11 @@
 import type { JobApplication } from "./types/job";
-
+let lastUrl = "";
+let isExtensionActive = false;
 export const isJobPage = (url: string): boolean => {
   console.log("Checking if URL is a job page:", url);
   if (!url) return false;
 
   const urlLower = url.toLowerCase();
-  let urlObj: URL;
-
-  try {
-    urlObj = new URL(urlLower);
-  } catch (e) {
-    console.error("Invalid URL:", url);
-    return false;
-  }
 
   // 1. High-confidence markers (If these exist, it's almost certainly a job)
   const hasSpecificJobId = [
@@ -26,61 +19,70 @@ export const isJobPage = (url: string): boolean => {
 
   if (hasSpecificJobId) return true;
 
-  // 2. Normalize the Path (Crucial Fix)
-  // Remove trailing slash so "/jobs/" becomes "/jobs"
-  const path = urlObj.pathname.replace(/\/$/, "");
+  try {
+    const urlObj = new URL(urlLower);
 
-  // 3. Define Generic "Listing" Roots
-  // We want to return FALSE if the path is EXACTLY one of these
-  const genericPaths = [
-    "/jobs",
-    "/job",
-    "/careers",
-    "/career",
-    "/jobs/search",
-    "/jobs/collections",
-    "/jobs/tracker",
-    "index.htm",
-    "search.htm",
-  ];
+    // 2. Normalize the Path (Crucial Fix)
+    // Remove trailing slash so "/jobs/" becomes "/jobs"
+    const path = urlObj.pathname.replace(/\/$/, "");
 
-  const isGenericRoot = genericPaths.some((p) => path === p);
+    // 3. Define Generic "Listing" Roots
+    // We want to return FALSE if the path is EXACTLY one of these
+    const genericPaths = [
+      "/jobs",
+      "/job",
+      "/careers",
+      "/career",
+      "/jobs/search",
+      "/jobs/collections",
+      "/jobs/tracker",
+      "index.htm",
+      "search.htm",
+    ];
 
-  // 4. Define Valid "Job" Path Patterns
-  // We want to return TRUE if it contains these but ISN'T a generic root
-  const hasJobPathPattern = [
-    "/job/",
-    "/jobs/",
-    "jobs.",
-    "job.",
-    "/view/",
-    "/posting/",
-    "/apply/",
-    "/career/",
-    "/careers/",
-  ].some((p) => urlLower.includes(p));
+    const isGenericRoot = genericPaths.some((p) => path === p);
 
-  // LOGIC:
-  // - If it's a generic root (like /jobs), it's FALSE.
-  // - If it's not a root, but has a job-like path (like /jobs/123), it's TRUE.
-  console.log(
-    `URL Path: "${path}", isGenericRoot: ${isGenericRoot}, hasJobPathPattern: ${hasJobPathPattern}`,
-  );
-  console.log("Final Determination:", hasJobPathPattern && !isGenericRoot);
-  return hasJobPathPattern && !isGenericRoot;
+    // 4. Define Valid "Job" Path Patterns
+    // We want to return TRUE if it contains these but ISN'T a generic root
+    const hasJobPathPattern = [
+      "/job/",
+      "/jobs/",
+      "jobs.",
+      "job.",
+      "/view/",
+      "/posting/",
+      "/apply/",
+      "/career/",
+      "/careers/",
+    ].some((p) => urlLower.includes(p));
+
+    // LOGIC:
+    // - If it's a generic root (like /jobs), it's FALSE.
+    // - If it's not a root, but has a job-like path (like /jobs/123), it's TRUE.
+    console.log(
+      `URL Path: "${path}", isGenericRoot: ${isGenericRoot}, hasJobPathPattern: ${hasJobPathPattern}`,
+    );
+    console.log("Final Determination:", hasJobPathPattern && !isGenericRoot);
+    return hasJobPathPattern && !isGenericRoot;
+  } catch (e) {
+    console.error("Invalid URL:", url);
+    return false;
+  }
 };
 
 export const detectCompany = (): string => {
   const selectors = [
     // --- 1. Site-Specific High Confidence ---
-    ".main-header-logo img", // Lever (Check ALT attribute)
-    ".logo img", // Greenhouse (Check ALT attribute)
-    ".logo",
+
     '[data-automation="advertiser-name"]', // Seek
     ".job-details-jobs-unified-top-card__company-name a", // LinkedIn
     ".jobs-unified-top-card__company-name a", // LinkedIn
     ".job-details-jobs-unified-top-card__company-name", // LinkedIn
     ".jobs-unified-top-card__company-name", // LinkedIn
+
+    ".main-header-logo img", // Lever (Check ALT attribute)
+    ".logo img", // Greenhouse (Check ALT attribute)
+    ".logo",
 
     '[class*="employerNameHeading"]', // Glassdoor
     ".jobsearch-CompanyReview--full", // Indeed
@@ -99,7 +101,6 @@ export const detectCompany = (): string => {
   for (const selector of selectors) {
     const element = document.querySelector(selector);
     if (element) {
-      console.log(`Company Element Found for Selector "${selector}":`, element);
       let text = "";
 
       // Special handling for Images (Lever/Greenhouse)
@@ -116,13 +117,17 @@ export const detectCompany = (): string => {
       }
 
       // --- CLEANING LOGIC ---
-      text = text
-        .split("\n")[0] // Get first line only
-        .replace(/Company, |at | - Senior| - Junior/gi, "") // Remove prefixes/suffixes
-        .replace(/Logos?|Logo/gi, "") // Remove common "Logo" text from ALT tags
-        .trim();
+      // --- JUNK FILTER (Same logic as Job Title fix) ---
+      const isVisible =
+        (element as HTMLElement).offsetWidth > 0 || element.tagName === "META";
+      const junkRegex =
+        /top job picks|recommended|suggested|search|careers|employment|recruitment|see more/i;
+      const isJunk = junkRegex.test(text.toLowerCase());
 
-      if (text && text.length > 1) return text;
+      if (text.length > 1 && isVisible && !isJunk) {
+        console.log(`✅ Company Found via "${selector}":`, text);
+        return text;
+      }
     }
   }
 
@@ -160,7 +165,7 @@ const detectJobTitle = (): string => {
   ];
   for (const selector of selectors) {
     const el = document.querySelector(selector) as HTMLElement;
-    console.log(`Job Title Element Found for Selector "${selector}":`, el);
+
     if (el) {
       const text = el.innerText.trim();
       const isVisible = el.offsetWidth > 0 && el.offsetHeight > 0;
@@ -314,7 +319,7 @@ const extractJobData = (): JobApplication | null => {
     const company = detectCompany();
     const link = detectJobLink();
     const jobId = extractJobId(link);
-
+    console.log("Extracted Job Data:", { jobTitle, company, link, jobId });
     // const isValidRecord =
     //   jobId || (jobTitle && company && jobTitle !== company);
 
@@ -335,210 +340,108 @@ const extractJobData = (): JobApplication | null => {
   }
 };
 
-let lastProcessedId = "";
 function notifySidePanel(attempts = 0) {
+  const isMainFrame = window.self === window.top;
   const currentUrl = detectJobLink();
-  const currentId = extractJobId(currentUrl);
 
-  // 1. QUICK EXIT: If we are NOT on a job page, clear the panel.
-  // This must happen BEFORE the "Duplicate ID" check.
+  // 1. FAST-FAIL: Exit if not a job-related URL
   if (!isJobPage(currentUrl)) {
-    // if (window.self === window.top) {
-    // Only clear if we actually had something stored previously
-    console.log("🚫 Left job page. Clearing side panel.");
-    sendToSidePanel(null);
-    lastProcessedId = "";
-    // }
-    return;
+    console.log(
+      "Not a job page. URL:",
+      currentUrl,
+      isMainFrame,
+      "Attempt:",
+      attempts,
+    );
+    if (isMainFrame && attempts === 0) {
+      // if (isMainFrame) {
+      console.log("🚫 Main frame: Not a job page. Clearing.");
+      sendToSidePanel(null);
+    }
+    return; // Stop here for all frames
   }
 
-  // 2. FRAME CHECK: Stop non-essential iframes from processing job data
-  const hasJobDetails = !!document.querySelector(
-    "h1, .job-title, .jobs-details",
-  );
-  if (!hasJobDetails && attempts === 0) {
-    return;
-  }
+  // 2. IFRAME GUARD: Only frames that actually find data should talk
+  // Main frame is allowed to proceed to extraction regardless
 
-  // 3. DUPLICATE CHECK: Now that we know we ARE on a job page,
-  // check if we've already handled this specific ID.
-  if (attempts === 0 && currentId && currentId === lastProcessedId) {
-    return;
-  }
-
-  // 4. ATTEMPT EXTRACTION
+  // 3. EXTRACTION
   const jobData = extractJobData();
-
-  // 5. SUCCESS: Send to Side Panel
-  if (jobData && jobData.jobTitle && jobData.company) {
-    lastProcessedId = jobData.id;
-    console.log(`🎯 Job Found:`, jobData.jobTitle);
+  if (jobData?.jobTitle) {
+    // REMOVED: lastProcessedId check.
+    // We send data every time this is called on a valid job page.
+    console.log("🎯 Sending Job Data to Side Panel");
     sendToSidePanel(jobData);
-    return;
-  }
-
-  // 6. RETRY LOGIC: URL is correct, but the DOM hasn't rendered yet
-  if (attempts < 10) {
-    setTimeout(() => notifySidePanel(attempts + 1), 500);
-  } else {
-    console.log("Giving up. DOM elements not found.");
-    // Optional: Only clear if you want the panel empty when a load fails
-    // sendToSidePanel(null);
+  } else if (attempts < 8) {
+    // 4. RETRY: If it's a job URL but elements haven't rendered yet
+    setTimeout(() => notifySidePanel(attempts + 1), 700);
   }
 }
-// function notifySidePanel(attempts = 0) {
-//   // Step 0: Get the ID immediately from the URL/Link
-//   const currentUrl = detectJobLink();
-//   const currentId = extractJobId(currentUrl);
-
-//   // If we are already on this job and this is the FIRST attempt of a new trigger, stop.
-//   // (We allow attempts > 0 to continue so the current retry loop can finish)
-//   if (attempts === 0 && currentId && currentId === lastProcessedId) {
-//     console.log("Already tracking this ID. Ignoring duplicate trigger.");
-//     return;
-//   }
-
-//   console.log(`Notify Side Panel Attempt ${attempts} | ID: ${currentId}`);
-
-//   // 1. Quick Exit
-//   if (!isJobPage(currentUrl)) {
-//     console.log("Not a job page. Clearing side panel.");
-//     sendToSidePanel(null);
-//     lastProcessedId = "";
-//     return;
-//   }
-
-//   // 2. Attempt Extraction
-//   const jobData = extractJobData();
-
-//   // 3. If extraction is complete
-//   if (jobData && jobData.jobTitle && jobData.company) {
-//     // Final check before sending
-//     if (lastProcessedId === jobData.id) {
-//       return;
-//     }
-
-//     lastProcessedId = jobData.id;
-//     console.log("🎯 Job Data Found:", jobData);
-//     sendToSidePanel(jobData);
-//     return;
-//   }
-
-//   // 4. Retry Logic
-//   if (attempts < 10) {
-//     setTimeout(() => notifySidePanel(attempts + 1), 500);
-//     return;
-//   }
-
-//   console.log("Giving up.");
-//   sendToSidePanel(null);
-// }
-// function notifySidePanel(attempts = 0) {
-//   const currentUrl = detectJobLink();
-//   console.log("Notify Side Panel Attempt ", lastProcessedId);
-//   // 1. Quick Exit: If it's definitely not a job page, clear the panel
-//   if (!isJobPage(currentUrl)) {
-//     console.log("Not a job page. Clearing side panel.");
-//     sendToSidePanel(null);
-//     lastProcessedId = ""; // Reset so we can re-detect if they go back
-//     return;
-//   }
-
-//   // 2. Attempt Extraction
-//   const jobData = extractJobData();
-//   console.log(`Attempt ${attempts}: Extracted Job Data:`, jobData);
-//   // 3. Logic Gate: Do we have enough data?
-//   if (jobData && jobData.jobTitle && jobData.company) {
-//     if (lastProcessedId === jobData.id && jobData.jobTitle && jobData.company) {
-//       console.log("Still on the same job, skipping update.", lastProcessedId);
-//       return;
-//     }
-//     // 4392439074
-//     // Only update lastProcessedId when extraction is complete
-//     if (jobData.jobTitle && jobData.company) {
-//       lastProcessedId = jobData.id;
-//     }
-//     console.log("🎯 Job Data Found:", jobData);
-//     sendToSidePanel(jobData);
-//     return;
-//   } else if (attempts < 10) {
-//     // RETRY: URL looks like a job, but DOM isn't ready yet
-//     console.log(`Searching for DOM elements... Attempt ${attempts + 1}/10`);
-//     setTimeout(() => notifySidePanel(attempts + 1), 500);
-//   } else {
-//     // FAILURE: We tried 10 times (5 seconds) and couldn't find the title/company
-//     console.log("Giving up. DOM elements not found.");
-//     sendToSidePanel(null);
-//     return;
-//   }
-// }
 
 // Helper to keep the messaging logic clean
-function sendToSidePanel(jobData: JobApplication | null) {
-  chrome.runtime.sendMessage(
-    {
-      type: "JOB_UPDATED",
-      payload: { job: jobData },
-    },
-    () => {
-      if (chrome.runtime.lastError) {
-        // Ignore: happens if side panel is closed
-      }
-    },
-  );
+function sendToSidePanel(job: JobApplication | null) {
+  console.log("Sending Job Data to Side Panel:", { job });
+  chrome.runtime.sendMessage({ type: "JOB_UPDATED", payload: { job: job } });
 }
-// let lastProcessedId = "";
-
-// function notifySidePanel() {
-//   let jobData: JobApplication | null = null;
-
-//   const currentUrl = detectJobLink();
-
-//   if (isJobPage(currentUrl)) {
-//     // Always extract the latest data to ensure sidepanel is fresh
-//     jobData = extractJobData();
-//     // Only log/update tracker if it's a NEW job
-//     if (jobData?.id && jobData?.id !== lastProcessedId) {
-//       lastProcessedId = jobData.id;
-//     }
-//   }
-//   // } else {
-//   //   console.log("Not a job page or URL missing. Clearing side panel data.");
-//   //   jobData = null;
-//   // }
-//   console.log("Sending to Side Panel:", jobData);
-
-//   chrome.runtime.sendMessage(
-//     {
-//       type: "JOB_UPDATED",
-//       payload: {
-//         job: jobData, // Send the actual data, not the undefined variable
-//       },
-//     },
-//     () => {
-//       if (chrome.runtime.lastError) {
-//         console.log("Side panel closed.");
-//       }
-//     },
-//   );
-// }
 // Listen for triggers from Background or Side Panel
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  console.log("Content script received message:", sender, msg);
+chrome.runtime.onMessage.addListener((msg, _, sendResponse) => {
+  if (msg.type === "PANEL_STATUS") {
+    console.log("Received PANEL_STATUS message:", msg);
+    if (msg.isOpen) {
+      isExtensionActive = msg.isOpen;
+      if (window.self === window.top) {
+        notifySidePanel();
+      }
+    }
+  }
+
   if (msg.type === "REFRESH_JOB_DATA") notifySidePanel();
-  if (msg.type === "GET_CURRENT_STATE") sendResponse({ job: extractJobData() });
+
+  if (msg.type === "GET_CURRENT_STATE" && window.self === window.top) {
+    sendResponse({ job: extractJobData() });
+  }
   return true;
 });
 
 // Event-driven: Watch for clicks (LinkedIn/Seek sidebars)
 // window.addEventListener("click", () => setTimeout(notifySidePanel, 3000));
-window.addEventListener(
-  "click",
-  () => {
-    setTimeout(notifySidePanel, 5000);
-  },
-  true,
-);
+// window.addEventListener(
+//   "click",
+//   () => {
 
-// Fallback Heartbeat: Safety net for silent React updates
-// setInterval(notifySidePanel, 3000);
+//     setTimeout(notifySidePanel, 1000);
+//   },
+//   true,
+// );
+
+const checkUrlChange = () => {
+  if (!isExtensionActive) return;
+
+  const currentUrl = detectJobLink();
+  if (currentUrl !== lastUrl) {
+    lastUrl = currentUrl;
+    console.log("URL Change detected:", lastUrl);
+
+    setTimeout(notifySidePanel, 1000);
+  }
+};
+
+// 2. Watch for URL changes
+// (Covers back/forward buttons and SPA navigation)
+window.addEventListener("popstate", checkUrlChange);
+
+// 3. The "Safety Net"
+// Since some SPAs use pushState without triggering popstate,
+// we check the URL every second. This uses almost ZERO CPU.
+setInterval(checkUrlChange, 1000);
+// Hack for SPAs: Watch for URL changes by intercepting history pushes
+// let lastUrl = location.href;
+// new MutationObserver(() => {
+//   const url = location.href;
+//   if (url !== lastUrl) {
+//     lastUrl = url;
+//     console.log("Navigation detected:", url);
+//     // Reset state and try to extract
+//     lastProcessedId = "";
+//     setTimeout(notifySidePanel, 1500); // Give LinkedIn time to render the new view
+//   }
+// }).observe(document, { subtree: true, childList: true });
