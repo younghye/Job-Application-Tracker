@@ -1,66 +1,40 @@
 import { useEffect, useState } from "react";
 import JobForm from "./JobForm";
 import type { JobApplication } from "../types/job";
+import "../assets/styles/index.css";
 
 const SidePanel = () => {
   const [job, setJob] = useState<JobApplication | null>(null);
-  useEffect(() => {
-    console.log("Side Panel Listener Mounted");
-    // 1. Open a "Port" to the background script.
-    // As long as this port is open, background.js knows we are here.
-    const port = chrome.runtime.connect({ name: "sidepanel" });
-    const msgListener = (msg: any, sender: any, sendResponse: any) => {
-      // Log EVERY message to see if ANYTHING is coming through
-      console.log(
-        "DEBUG: Side Panel caught ANY message:",
-        msg,
-        sender,
-        sendResponse,
-      );
+  const [message, setMessage] = useState<string | null>(null);
 
+  useEffect(() => {
+    //  Open a "Port" to the background script.
+    const port = chrome.runtime.connect({ name: "sidepanel" });
+    const msgListener = (msg: any, _sender: any, _sendResponse: any) => {
       if (msg.type === "JOB_UPDATED") {
-        console.log("SUCCESS: Job Data Received:", msg.payload.job);
+        console.log("Received JOB_UPDATED in Side Panel:", msg.payload.job);
         setJob(msg.payload.job);
+        setMessage(null);
+
+        if (msg.payload.job) {
+          chrome.runtime.sendMessage(
+            {
+              action: "CHECK_IF_SAVED",
+              id: msg.payload.job?.id,
+            },
+            (response) => {
+              if (response?.existed) {
+                setMessage("This job is already in your list!");
+              }
+            },
+          );
+        }
       }
-      // Return true to keep the channel open for async responses
       return true;
     };
 
     chrome.runtime.onMessage.addListener(msgListener);
 
-    // Trigger an immediate check in case the data is already there
-    // (You need to implement GET_CURRENT_STATE in your content script)
-    // chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
-    //   if (tab?.id) {
-    //     chrome.tabs.sendMessage(
-    //       tab.id,
-    //       { type: "GET_CURRENT_STATE" },
-    //       (res) => {
-    //         if (res?.job) setJob(res.job);
-    //       },
-    //     );
-    //   }
-    // });
-
-    // chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    //   if (tabs[0]?.id) {
-    //     chrome.tabs.sendMessage(
-    //       tabs[0].id,
-    //       { type: "GET_CURRENT_STATE" },
-    //       (response) => {
-    //         if (chrome.runtime.lastError) {
-    //           setJob(null); // Clear if not a job site
-    //         } else if (response && response.job) {
-    //           setJob(response.job);
-    //         } else {
-    //           setJob(null);
-    //         }
-    //       },
-    //     );
-    //   }
-    // });
-
-    // SidePanel.tsx
     const fetchData = () => {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs[0]?.id) {
@@ -68,7 +42,7 @@ const SidePanel = () => {
           chrome.tabs.sendMessage(
             tabs[0].id,
             { type: "GET_CURRENT_STATE" },
-            { frameId: 0 }, // 🎯 THIS IS THE KEY FIX
+            { frameId: 0 },
             (response) => {
               if (chrome.runtime.lastError) {
                 setTimeout(fetchData, 500);
@@ -82,25 +56,74 @@ const SidePanel = () => {
         }
       });
     };
+
     fetchData();
+
     return () => {
       console.log("Side Panel Listener Unmounted");
       chrome.runtime.onMessage.removeListener(msgListener);
       port.disconnect();
     };
-  }, []); // Empty dependency array is correct
+  }, []);
+
+  const handleUpsert = async (data: JobApplication) => {
+    chrome.runtime.sendMessage(
+      {
+        action: "SAVE_JOB",
+        data: data,
+      },
+      (response) => {
+        if (chrome.runtime.lastError) {
+          console.error("Error saving:", chrome.runtime.lastError);
+          return;
+        }
+
+        if (response?.existed) {
+          setMessage("This job is already in your list!");
+        } else if (response?.success) {
+          setMessage("Job saved successfully!");
+        }
+      },
+    );
+  };
+
   return (
-    <div className="p-4">
-      <JobForm
-        job={job}
-        onClose={() => {
-          // Handle close action
-        }}
-        onUpsert={() => {
-          // const newJob = { id: crypto.randomUUID(), ...data };
-          // saveJob(newJob);
-        }}
-      />
+    <div className="flex flex-col h-screen ">
+      <div className="p-4 bg-white border-b border-gray-200 shadow-sm z-10">
+        <button
+          onClick={() => chrome.tabs.create({ url: "dashboard.html" })}
+          className="btn-dashboard"
+        >
+          <svg
+            className="w-4 h-4 transition-transform duration-300 group-hover:rotate-12"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+            />
+          </svg>
+          <span>Go to Dashboard</span>
+        </button>
+      </div>
+      <div className="p-4 relative min-h-screen">
+        {message && (
+          <div className="absolute inset-0 bg-white/80 z-50 flex flex-col items-center justify-center">
+            <p className="text-blue-500 text-lg font-semibold">{message}</p>
+          </div>
+        )}
+        <JobForm
+          job={job}
+          // onClose={() => {
+          //   // Handle close action
+          // }}
+          onUpsert={handleUpsert}
+        />
+      </div>
     </div>
   );
 };

@@ -1,8 +1,10 @@
 import type { JobApplication } from "./types/job";
+
 let lastUrl = "";
 let isExtensionActive = false;
+
 export const isJobPage = (url: string): boolean => {
-  console.log("Checking if URL is a job page:", url);
+  console.log("Checking URL for Job Page:", url);
   if (!url) return false;
 
   const urlLower = url.toLowerCase();
@@ -13,6 +15,7 @@ export const isJobPage = (url: string): boolean => {
     "jobid=",
     "job_id=",
     "joblistingid=",
+    "vjk=", // Indeed
     "jk=", // Indeed
     "jl=", // Glassdoor
   ].some((p) => urlLower.includes(p));
@@ -22,13 +25,11 @@ export const isJobPage = (url: string): boolean => {
   try {
     const urlObj = new URL(urlLower);
 
-    // 2. Normalize the Path (Crucial Fix)
     // Remove trailing slash so "/jobs/" becomes "/jobs"
     const path = urlObj.pathname.replace(/\/$/, "");
 
-    // 3. Define Generic "Listing" Roots
     // We want to return FALSE if the path is EXACTLY one of these
-    const genericPaths = [
+    const hasGenericPaths = [
       "/jobs",
       "/job",
       "/careers",
@@ -38,11 +39,8 @@ export const isJobPage = (url: string): boolean => {
       "/jobs/tracker",
       "index.htm",
       "search.htm",
-    ];
+    ].some((p) => path === p);
 
-    const isGenericRoot = genericPaths.some((p) => path === p);
-
-    // 4. Define Valid "Job" Path Patterns
     // We want to return TRUE if it contains these but ISN'T a generic root
     const hasJobPathPattern = [
       "/job/",
@@ -56,24 +54,15 @@ export const isJobPage = (url: string): boolean => {
       "/careers/",
     ].some((p) => urlLower.includes(p));
 
-    // LOGIC:
-    // - If it's a generic root (like /jobs), it's FALSE.
-    // - If it's not a root, but has a job-like path (like /jobs/123), it's TRUE.
-    console.log(
-      `URL Path: "${path}", isGenericRoot: ${isGenericRoot}, hasJobPathPattern: ${hasJobPathPattern}`,
-    );
-    console.log("Final Determination:", hasJobPathPattern && !isGenericRoot);
-    return hasJobPathPattern && !isGenericRoot;
+    return hasJobPathPattern && !hasGenericPaths;
   } catch (e) {
     console.error("Invalid URL:", url);
     return false;
   }
 };
 
-export const detectCompany = (): string => {
+export const extractCompany = (): string => {
   const selectors = [
-    // --- 1. Site-Specific High Confidence ---
-
     '[data-automation="advertiser-name"]', // Seek
     ".job-details-jobs-unified-top-card__company-name a", // LinkedIn
     ".jobs-unified-top-card__company-name a", // LinkedIn
@@ -85,17 +74,15 @@ export const detectCompany = (): string => {
     ".logo",
 
     '[class*="employerNameHeading"]', // Glassdoor
-    ".jobsearch-CompanyReview--full", // Indeed
-    // --- 2. Common Data Attributes & Classes ---
+    '[data-testid="inlineHeader-companyName"]', // Indeed
+    '[data-testid="company-name"]', // Indeed
+
+    // Common Data Attributes & Classes
     '[class*="companyName"]',
     '[class*="company-name"]',
     '[class*="hiring-organization"]',
     'a[href*="/company/"]',
     'a[aria-label^="Company,"]',
-
-    // --- 3. Meta Tags (Hidden in <head>) ---
-    // "meta[property='og:site_name']",
-    // "meta[name='twitter:title']", // Often contains "Job at Company"
   ];
 
   for (const selector of selectors) {
@@ -116,16 +103,13 @@ export const detectCompany = (): string => {
         text = (element as HTMLElement).innerText || "";
       }
 
-      // --- CLEANING LOGIC ---
-      // --- JUNK FILTER (Same logic as Job Title fix) ---
       const isVisible =
         (element as HTMLElement).offsetWidth > 0 || element.tagName === "META";
       const junkRegex =
-        /top job picks|recommended|suggested|search|careers|employment|recruitment|see more/i;
+        /top job picks|recommended|suggested|employment|see more/i;
       const isJunk = junkRegex.test(text.toLowerCase());
 
       if (text.length > 1 && isVisible && !isJunk) {
-        console.log(`✅ Company Found via "${selector}":`, text);
         return text;
       }
     }
@@ -133,22 +117,22 @@ export const detectCompany = (): string => {
 
   // --- 4. ULTIMATE FALLBACK: Document Title ---
   // Many sites follow "Job Title - Company Name | Site"
-  const titleParts = document.title.split(/[-|]/);
-  if (titleParts.length > 1) {
-    // Usually the company is the first or second part
-    const potentialCompany = titleParts[0].trim();
-    if (potentialCompany && potentialCompany.length > 2)
-      return potentialCompany;
-  }
+  // const titleParts = document.title.split(/[-|]/);
+  // if (titleParts.length > 1) {
+  //   // Usually the company is the first or second part
+  //   const potentialCompany = titleParts[0].trim();
+  //   if (potentialCompany && potentialCompany.length > 2)
+  //     return potentialCompany;
+  // }
 
   return "";
 };
 
-const detectJobTitle = (): string => {
+const extractJobTitle = (): string => {
   const selectors = [
-    // 1. LinkedIn Detail Pane (The most specific)
+    // LinkedIn
     ".job-details-jobs-unified-top-card__job-title",
-    ".job-details-jobs-unified-top-card__job-title a", // LinkedIn sometimes puts the title in the company name area
+    ".job-details-jobs-unified-top-card__job-title a",
     ".jobs-unified-top-card__job-title",
     ".jobs-unified-top-card__job-title a",
     ".jobs-details-sidebar__title",
@@ -157,19 +141,18 @@ const detectJobTitle = (): string => {
     ".jobsearch-JobInfoHeader-title", // Indeed
     '[class*="JobDetails_jobTitle"]', // Glassdoor
 
-    // 3. Scoped Search (Looking for h1 inside a 'main' or 'article' tag only)
     "h1",
-    // "main h1",
-    // "article h1",
-    ".re-job-title", // Common in some regional sites
+    ".re-job-title",
   ];
+
   for (const selector of selectors) {
     const el = document.querySelector(selector) as HTMLElement;
 
     if (el) {
       const text = el.innerText.trim();
       const isVisible = el.offsetWidth > 0 && el.offsetHeight > 0;
-      const isJunk = /no\. 1|Employment|Recruitment|Career|Search/i.test(text);
+      const isJunk =
+        /no\. 1|Employment|Recruitment|Career|Jobs for you|Search/i.test(text);
 
       if (text.length > 3 && isVisible && !isJunk) {
         return text;
@@ -179,16 +162,8 @@ const detectJobTitle = (): string => {
   return "";
 };
 
-/**
- * Helper to ensure we aren't returning a generic search or "Jobs" home page
- */
 const isSpecificJobUrl = (url: string): boolean => {
-  const lowUrl = url.toLowerCase();
-  // const genericPatterns = ["/jobs", "/search", "index.htm", "?q=", "keywords="];
-
-  // If it ends exactly in /jobs or /jobs/, it's usually a root page
-
-  // If it contains an ID or "view", it's usually specific
+  const urlLower = url.toLowerCase();
   const hasJobId = [
     "currentjobid",
     "jobid",
@@ -196,19 +171,19 @@ const isSpecificJobUrl = (url: string): boolean => {
     "/view/",
     "/job/",
     "/posting/",
-  ].some((p) => lowUrl.includes(p));
+  ].some((p) => urlLower.includes(p));
 
   return hasJobId;
 };
 
-export const detectJobLink = () => {
+export const extractJobLink = () => {
   const url = window.location.href.toLowerCase();
 
   // --- 1. SITE-SPECIFIC "ACTIVE" SELECTORS ---
   // These target the specific job card or detail pane currently in view.
 
   // LinkedIn: Look for the active item in the list or the title in the detail pane
-  if (url.includes("linkedin.com")) {
+  if (url.includes("linkedin")) {
     const liActive = document.querySelector(
       '.job-card-container--active a, [aria-current="true"] a, .jobs-details-sidebar__title a',
     ) as HTMLAnchorElement;
@@ -217,7 +192,7 @@ export const detectJobLink = () => {
   }
 
   // Seek: Target the specific title link in the detail view
-  if (url.includes("seek.co.nz") || url.includes("seek.com.au")) {
+  if (url.includes("seek")) {
     // A. Try the Detail Pane Title (The most accurate)
     const detailTitle = document.querySelector(
       '[data-automation="job-detail-title"], [data-automation="jobTitle"]',
@@ -233,7 +208,6 @@ export const detectJobLink = () => {
       '[class*="is-selected"], [aria-current="true"]',
     );
     const cardLink = activeCard?.querySelector("a") as HTMLAnchorElement;
-
     if (cardLink?.href) return cardLink.href;
   }
 
@@ -258,15 +232,24 @@ export const detectJobLink = () => {
       }
     }
   }
+  if (url.includes("indeed")) {
+    // 1. Check if we are already on a specific job page
+    if (url.includes("vjk=")) return window.location.href;
 
-  // Indeed: Target the job title in the right-hand "vjs" (Visual Job Search) pane
-  if (url.includes("indeed.com")) {
-    const indeedLink = document.querySelector(
-      '.jobsearch-JobInfoHeader-title a, [class*="vjs-highlight"] a',
+    // 2. Fallback: Find the "Active" card in the list
+    // Indeed marks the selected card with classes like 'vjs-highlight'
+    const activeCard = document.querySelector(
+      '.vjs-highlight a[data-jk], [class*="selected"] a[data-jk], .jobsearch-ResultsList .selected a',
     ) as HTMLAnchorElement;
-    if (indeedLink?.href) return indeedLink.href;
-  }
 
+    if (activeCard) {
+      const jkId =
+        activeCard.getAttribute("data-jk") ||
+        activeCard.closest("[data-jk]")?.getAttribute("data-jk");
+      console.log("Indeed Active Link Detected:", activeCard.href, jkId);
+      if (jkId) return `https://www.indeed.com/viewjob?jk=${jkId}`;
+    }
+  }
   // --- 2. UNIVERSAL SEMANTIC FALLBACKS ---
   // For company homepages and Greenhouse/Lever/Workday
 
@@ -307,26 +290,18 @@ const extractJobId = (url: string): string => {
   const numericMatch = lowUrl.match(/(\d{8,12})/);
   if (numericMatch) return numericMatch[0];
 
-  // 4. Ultimate Fallback: The "Clean" URL Path
-  // If no ID is found, we use the URL without the "junk" (query params)
-  // return lowUrl.split(/[?#]/)[0].replace(/\/$/, "");
   return url;
 };
 
 const extractJobData = (): JobApplication | null => {
   try {
-    const jobTitle = detectJobTitle();
-    const company = detectCompany();
-    const link = detectJobLink();
-    const jobId = extractJobId(link);
-    console.log("Extracted Job Data:", { jobTitle, company, link, jobId });
-    // const isValidRecord =
-    //   jobId || (jobTitle && company && jobTitle !== company);
-
-    // if (!isValidRecord) return null;
+    const jobTitle = extractJobTitle();
+    const company = extractCompany();
+    const link = extractJobLink();
+    const id = extractJobId(link);
 
     return {
-      id: jobId,
+      id,
       jobTitle,
       company,
       link,
@@ -342,50 +317,47 @@ const extractJobData = (): JobApplication | null => {
 
 function notifySidePanel(attempts = 0) {
   const isMainFrame = window.self === window.top;
-  const currentUrl = detectJobLink();
-
-  // 1. FAST-FAIL: Exit if not a job-related URL
+  const currentUrl = extractJobLink();
+  console.log("Notify Side Panel Attempt:", attempts, "URL:", currentUrl);
   if (!isJobPage(currentUrl)) {
-    console.log(
-      "Not a job page. URL:",
-      currentUrl,
-      isMainFrame,
-      "Attempt:",
-      attempts,
-    );
     if (isMainFrame && attempts === 0) {
-      // if (isMainFrame) {
-      console.log("🚫 Main frame: Not a job page. Clearing.");
-      sendToSidePanel(null);
+      chrome.runtime.sendMessage({
+        type: "JOB_UPDATED",
+        payload: { job: null },
+      });
     }
-    return; // Stop here for all frames
+    return;
   }
 
-  // 2. IFRAME GUARD: Only frames that actually find data should talk
+  // IFRAME GUARD: Only frames that actually find data should talk
   // Main frame is allowed to proceed to extraction regardless
-
-  // 3. EXTRACTION
   const jobData = extractJobData();
-  if (jobData?.jobTitle) {
-    // REMOVED: lastProcessedId check.
-    // We send data every time this is called on a valid job page.
-    console.log("🎯 Sending Job Data to Side Panel");
-    sendToSidePanel(jobData);
+
+  if (jobData?.jobTitle && jobData?.company) {
+    chrome.runtime.sendMessage({
+      type: "JOB_UPDATED",
+      payload: { job: jobData },
+    });
   } else if (attempts < 8) {
-    // 4. RETRY: If it's a job URL but elements haven't rendered yet
+    // RETRY: If it's a job URL but elements haven't rendered yet
     setTimeout(() => notifySidePanel(attempts + 1), 700);
   }
 }
 
-// Helper to keep the messaging logic clean
-function sendToSidePanel(job: JobApplication | null) {
-  console.log("Sending Job Data to Side Panel:", { job });
-  chrome.runtime.sendMessage({ type: "JOB_UPDATED", payload: { job: job } });
-}
+const checkUrlChange = () => {
+  if (!isExtensionActive) return;
+
+  const currentUrl = extractJobLink();
+  console.log("Checking URL Change:", currentUrl, "Last URL:", lastUrl);
+  if (currentUrl !== lastUrl) {
+    lastUrl = currentUrl;
+    setTimeout(notifySidePanel, 1000);
+  }
+};
+
 // Listen for triggers from Background or Side Panel
 chrome.runtime.onMessage.addListener((msg, _, sendResponse) => {
   if (msg.type === "PANEL_STATUS") {
-    console.log("Received PANEL_STATUS message:", msg);
     if (msg.isOpen) {
       isExtensionActive = msg.isOpen;
       if (window.self === window.top) {
@@ -394,54 +366,14 @@ chrome.runtime.onMessage.addListener((msg, _, sendResponse) => {
     }
   }
 
-  if (msg.type === "REFRESH_JOB_DATA") notifySidePanel();
-
   if (msg.type === "GET_CURRENT_STATE" && window.self === window.top) {
     sendResponse({ job: extractJobData() });
   }
   return true;
 });
 
-// Event-driven: Watch for clicks (LinkedIn/Seek sidebars)
-// window.addEventListener("click", () => setTimeout(notifySidePanel, 3000));
-// window.addEventListener(
-//   "click",
-//   () => {
-
-//     setTimeout(notifySidePanel, 1000);
-//   },
-//   true,
-// );
-
-const checkUrlChange = () => {
-  if (!isExtensionActive) return;
-
-  const currentUrl = detectJobLink();
-  if (currentUrl !== lastUrl) {
-    lastUrl = currentUrl;
-    console.log("URL Change detected:", lastUrl);
-
-    setTimeout(notifySidePanel, 1000);
-  }
-};
-
-// 2. Watch for URL changes
-// (Covers back/forward buttons and SPA navigation)
+// Watch for URL changes(Covers back/forward buttons and SPA navigation)
 window.addEventListener("popstate", checkUrlChange);
 
-// 3. The "Safety Net"
-// Since some SPAs use pushState without triggering popstate,
-// we check the URL every second. This uses almost ZERO CPU.
+// check the URL every second. This uses almost ZERO CPU.
 setInterval(checkUrlChange, 1000);
-// Hack for SPAs: Watch for URL changes by intercepting history pushes
-// let lastUrl = location.href;
-// new MutationObserver(() => {
-//   const url = location.href;
-//   if (url !== lastUrl) {
-//     lastUrl = url;
-//     console.log("Navigation detected:", url);
-//     // Reset state and try to extract
-//     lastProcessedId = "";
-//     setTimeout(notifySidePanel, 1500); // Give LinkedIn time to render the new view
-//   }
-// }).observe(document, { subtree: true, childList: true });

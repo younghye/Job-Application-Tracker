@@ -3,32 +3,55 @@ import type { JobApplication, JobApplicationFormData } from "../types/job";
 import type { SubmitHandler } from "react-hook-form";
 import { STATUS_OPTIONS } from "../types/job";
 import "../assets/styles/form.css";
+import { useEffect } from "react";
 interface JobFormProps {
   job: JobApplication | null;
-  onClose: () => void;
+  // onClose: () => void;
   onUpsert: (job: JobApplication) => void;
 }
 
-const JobForm = ({ job, onClose, onUpsert }: JobFormProps) => {
+const JobForm = ({ job, onUpsert }: JobFormProps) => {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
-  } = useForm<JobApplicationFormData>();
+  } = useForm<JobApplicationFormData>({
+    defaultValues: job || {},
+  });
+
+  useEffect(() => {
+    if (job) {
+      reset(job);
+    } else {
+      reset({
+        date: new Date().toISOString().split("T")[0], // Keep today's date
+        jobTitle: "",
+        company: "",
+        status: "Applied",
+        link: "",
+        note: "",
+      });
+    }
+  }, [job, reset]);
 
   const onSubmit: SubmitHandler<JobApplicationFormData> = (data) => {
-    if (job) {
-      // Update existing
-      onUpsert({ ...job, ...data });
-    } else {
-      // Insert new
-      const newJob: JobApplication = {
-        id: crypto.randomUUID(),
-        ...data,
-      };
-      onUpsert(newJob);
-    }
-    onClose();
+    const jobToSave = job
+      ? { ...job, ...data } // Updating existing
+      : { ...data, id: crypto.randomUUID() }; // Creating new
+    onUpsert(jobToSave);
+    // if (job) {
+    //   // Update existing
+    //   onUpsert({ ...job, ...data });
+    // } else {
+    //   // Insert new
+    //   const newJob: JobApplication = {
+    //     id: crypto.randomUUID(),
+    //     ...data,
+    //   };
+    //   onUpsert(newJob);
+    // }
+    // onClose();
   };
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -36,7 +59,7 @@ const JobForm = ({ job, onClose, onUpsert }: JobFormProps) => {
         <label>Date</label>
         <input
           type="date"
-          defaultValue={job?.date}
+          // defaultValue={job?.date}
           {...register("date", { required: "This field is required" })}
           className="input"
         />
@@ -49,7 +72,7 @@ const JobForm = ({ job, onClose, onUpsert }: JobFormProps) => {
         <label>Job Title</label>
         <input
           type="text"
-          defaultValue={job?.jobTitle}
+          // defaultValue={job?.jobTitle}
           {...register("jobTitle", { required: "This field is required" })}
           className="input"
         />
@@ -62,7 +85,7 @@ const JobForm = ({ job, onClose, onUpsert }: JobFormProps) => {
         <label>Company</label>
         <input
           type="text"
-          defaultValue={job?.company}
+          // defaultValue={job?.company}
           {...register("company", { required: "This field is required" })}
           className="input"
         />
@@ -75,7 +98,7 @@ const JobForm = ({ job, onClose, onUpsert }: JobFormProps) => {
         <label>Status</label>
         <select
           {...register("status")}
-          defaultValue={job?.status}
+          // defaultValue={job?.status}
           className="input"
         >
           {STATUS_OPTIONS.map((opt) => (
@@ -90,7 +113,7 @@ const JobForm = ({ job, onClose, onUpsert }: JobFormProps) => {
         <label>Link</label>
         <input
           type="text"
-          defaultValue={job?.link}
+          // defaultValue={job?.link}
           {...register("link", { required: "This field is required" })}
           className="input"
         />
@@ -102,17 +125,17 @@ const JobForm = ({ job, onClose, onUpsert }: JobFormProps) => {
       <div className="form-group">
         <label>Note</label>
         <textarea
-          defaultValue={job?.note}
+          // defaultValue={job?.note}
           {...register("note")}
           className="input"
         />
       </div>
 
       <div className="actions">
-        <button type="button" className="btn-secondary" onClick={onClose}>
+        {/* <button type="button" className="btn-secondary" onClick={() => reset()}>
           Cancel
-        </button>
-        <button type="submit" className="btn-primary">
+        </button> */}
+        <button type="submit" className="btn-primary ">
           Save
         </button>
       </div>

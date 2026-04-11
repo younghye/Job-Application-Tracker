@@ -55,6 +55,12 @@ select.input {
   border-radius: 6px;
   cursor: pointer;
 }
+
+.btn-primary:hover {
+  background-color: #0546fa !important;
+  cursor: pointer;
+}
+
 .btn-secondary {
   background: #f3f4f6;
   color: #374151;
