@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import JobForm from "./JobForm";
-import type { JobApplication } from "../types/job";
-import "../assets/styles/index.css";
+import JobForm from "../common/JobForm";
+import type { JobApplication } from "../../types/job";
+import "../../assets/styles/index.css";
 
 const SidePanel = () => {
   const [job, setJob] = useState<JobApplication | null>(null);

@@ -22,7 +22,7 @@ const Table = ({
 
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
-    pageSize: 15,
+    pageSize: 10,
   });
 
   const table = useReactTable({

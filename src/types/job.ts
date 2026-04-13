@@ -10,10 +10,4 @@ export interface JobApplication {
 
 export type JobApplicationFormData = Omit<JobApplication, "id">;
 
-export const STATUS_OPTIONS = [
-  "Applied",
-  "Interviewing",
-  "Rejected",
-  "Ghosted",
-  "Offer",
-];
+export const STATUS_OPTIONS = ["Applied", "Interviewing", "Rejected", "Offer"];

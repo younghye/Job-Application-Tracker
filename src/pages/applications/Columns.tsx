@@ -7,7 +7,7 @@ const columnHelper = createColumnHelper<JobApplication>();
 export const getColumns = (
   handleStatusChange: (id: string, status: string) => void,
   handleDelete: (id: string) => void,
-  setEditData: (job: JobApplication) => void,
+  openEditModal: (job: JobApplication) => void,
 ) => [
   columnHelper.accessor("date", {
     header: "Date",
@@ -27,7 +27,7 @@ export const getColumns = (
   }),
   columnHelper.accessor("status", {
     header: "Status",
-    size: 110,
+    size: 120,
     cell: (info) => (
       <select
         value={info.getValue()}
@@ -75,7 +75,7 @@ export const getColumns = (
     cell: (info) => (
       <div style={{ display: "flex", gap: "12px" }}>
         <button
-          onClick={() => setEditData(info.row.original)}
+          onClick={() => openEditModal(info.row.original)}
           className="edit-btn"
           title="Edit"
         >
