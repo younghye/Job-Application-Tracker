@@ -1,6 +1,10 @@
 import Papa from "papaparse";
 import type { JobApplication } from "../../types/job";
-import { sortJobsByDate, isExistJobByUrl } from "../../utils/jobUtils";
+import {
+  sortJobsByDate,
+  // isExistJobByUrl,
+  extractJobId,
+} from "../../utils/jobUtils";
 
 interface CsvServiceProps {
   data: JobApplication[];
@@ -46,8 +50,6 @@ export const importCSV = (
       skipEmptyLines: true,
       complete: (results) => {
         const validatedList: JobApplication[] = [];
-
-        // We use this to track duplicates inside the CSV file itself
         const tempBatch: JobApplication[] = [];
 
         results.data.forEach((row: any) => {
@@ -60,22 +62,26 @@ export const importCSV = (
             }
           });
 
-          // 2. REQUIREMENT: If company, link (url), or jobTitle are empty, skip
-          // if (!job.company || !job.link || !job.jobTitle) {
           if (!job.link) {
             return;
           }
 
+          // 4. If valid, assign ID and add to results
+          // We can call this to ensure the URL is processed, even if we don't use the ID directly here
+          if (!job.id) job.id = crypto.randomUUID();
+          if (!job.jobId) job.jobId = extractJobId(job.link);
+
           // 3. REQUIREMENT: If URL exists in current state OR in this import batch, skip
-          const existsInStoredData = isExistJobByUrl(job.link, existingData);
-          const existsInCurrentBatch = isExistJobByUrl(job.link, tempBatch);
+          const existsInStoredData = existingData.some(
+            (data) => data.jobId === job.jobId,
+          );
+          const existsInCurrentBatch = tempBatch.some(
+            (data) => data.jobId === job.jobId,
+          );
 
           if (existsInStoredData || existsInCurrentBatch) {
             return;
           }
-
-          // 4. If valid, assign ID and add to results
-          if (!job.id) job.id = crypto.randomUUID();
 
           const validJob = job as JobApplication;
           validatedList.push(validJob);

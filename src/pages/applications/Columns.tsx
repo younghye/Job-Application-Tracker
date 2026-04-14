@@ -9,6 +9,20 @@ export const getColumns = (
   handleDelete: (id: string) => void,
   openEditModal: (job: JobApplication) => void,
 ) => [
+  columnHelper.accessor("id", {
+    header: "ID",
+    meta: {
+      omitFromTable: true,
+    },
+  }),
+  columnHelper.accessor("jobId", {
+    header: "Job ID",
+    size: 100,
+    meta: {
+      // omitFromTable: true,
+      // omitFromExport: true,
+    },
+  }),
   columnHelper.accessor("date", {
     header: "Date",
     size: 100,

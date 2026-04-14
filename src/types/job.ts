@@ -1,5 +1,6 @@
 export interface JobApplication {
   id: string;
+  jobId: string; // Store extracted job ID from URL for deduplication
   jobTitle: string;
   company: string;
   link: string;

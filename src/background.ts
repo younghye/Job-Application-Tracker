@@ -1,4 +1,5 @@
 import type { JobApplication } from "./types/job";
+import { extractJobId } from "./utils/jobUtils";
 
 chrome.sidePanel
   .setPanelBehavior({ openPanelOnActionClick: true })
@@ -54,14 +55,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "SAVE_JOB") {
     chrome.storage.local.get(["applicationList"], (result) => {
       const list = (result.applicationList as JobApplication[]) || [];
-      const isDuplicate = list.some((job) => job.id === message.data.id);
+
+      const newJob = {
+        ...message.data,
+        jobId: message.data.jobId || extractJobId(message.data.link),
+        id: message.data.id || crypto.randomUUID(),
+      };
+      console.log("Attempting to save job:", newJob);
+      if (!newJob.jobId) {
+        sendResponse({ success: false, error: "COULD_NOT_EXTRACT_ID" });
+        return;
+      }
+
+      const isDuplicate = list.some((job) => job.jobId === message.data.jobId);
 
       if (isDuplicate) {
         sendResponse({ success: true, existed: true });
         return;
       }
 
-      const updatedList = [message.data, ...list];
+      const updatedList = [newJob, ...list];
       chrome.storage.local.set({ applicationList: updatedList }, () => {
         sendResponse({ success: true, existed: false });
       });
@@ -72,7 +85,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "CHECK_IF_SAVED") {
     chrome.storage.local.get(["applicationList"], (result) => {
       const list = (result.applicationList as JobApplication[]) || [];
-      const existed = list.some((job) => job.id === message.id);
+      const existed = list.some((job) => job.jobId === message.jobId);
       sendResponse({ existed });
     });
     return true;

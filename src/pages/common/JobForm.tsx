@@ -25,7 +25,7 @@ const JobForm = ({ job, onUpsert }: JobFormProps) => {
       reset(job);
     } else {
       reset({
-        date: new Date().toISOString().split("T")[0], // Keep today's date
+        date: new Date().toISOString().split("T")[0],
         jobTitle: "",
         company: "",
         status: "Applied",

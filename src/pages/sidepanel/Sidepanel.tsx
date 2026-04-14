@@ -20,7 +20,7 @@ const SidePanel = () => {
           chrome.runtime.sendMessage(
             {
               action: "CHECK_IF_SAVED",
-              id: msg.payload.job?.id,
+              jobId: msg.payload.job?.jobId,
             },
             (response) => {
               if (response?.existed) {
@@ -82,6 +82,8 @@ const SidePanel = () => {
           setMessage("This job is already in your list!");
         } else if (response?.success) {
           setMessage("Job saved successfully!");
+        } else {
+          setMessage(response?.error || "Unknown error occurred while saving.");
         }
       },
     );
@@ -112,10 +114,33 @@ const SidePanel = () => {
       </div>
       <div className="p-4 relative min-h-screen">
         {message && (
+          <div
+            className={`p-3 mb-4 rounded-lg flex justify-between items-center ${
+              message.includes("already")
+                ? "bg-amber-50 border border-amber-200"
+                : "bg-blue-50 border border-blue-200"
+            }`}
+          >
+            <p
+              className={`text-sm font-medium ${
+                message.includes("already") ? "text-amber-700" : "text-blue-700"
+              }`}
+            >
+              {message}
+            </p>
+            <button
+              onClick={() => setMessage(null)}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+        {/* {message && (
           <div className="absolute inset-0 bg-white/80 z-50 flex flex-col items-center justify-center">
             <p className="text-blue-500 text-lg font-semibold">{message}</p>
           </div>
-        )}
+        )} */}
         <JobForm
           job={job}
           // onClose={() => {

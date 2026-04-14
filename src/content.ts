@@ -1,5 +1,5 @@
 import type { JobApplication } from "./types/job";
-
+import { extractJobId } from "./utils/jobUtils";
 let lastUrl = "";
 let isExtensionActive = false;
 
@@ -270,38 +270,40 @@ export const extractJobLink = () => {
   return window.location.href;
 };
 
-const extractJobId = (url: string): string => {
-  if (!url) return "";
-  const lowUrl = url.toLowerCase();
+// const extractJobId = (url: string): string => {
+//   if (!url) return "";
+//   const lowUrl = url.toLowerCase();
 
-  // 1. Specific Key-Value patterns (Indeed, Glassdoor, Greenhouse, LinkedIn)
-  // We look for common ID keys and capture the alphanumeric value
-  const keyMatch = lowUrl.match(
-    /(?:jk=|jl=|gh_jid=|currentjobid=|postingid=|joblistingid=)([a-z0-9_-]+)/,
-  );
-  if (keyMatch) return keyMatch[1];
+//   // 1. Specific Key-Value patterns (Indeed, Glassdoor, Greenhouse, LinkedIn)
+//   // We look for common ID keys and capture the alphanumeric value
+//   const keyMatch = lowUrl.match(
+//     /(?:jk=|jl=|gh_jid=|currentjobid=|postingid=|joblistingid=)([a-z0-9_-]+)/,
+//   );
+//   if (keyMatch) return keyMatch[1];
 
-  // 2. Path-based IDs (Seek, LinkedIn /view/, Lever)
-  // We look for /job/ or /view/ followed by a sequence
-  const pathMatch = lowUrl.match(/\/(?:job|view|interstitial)\/([a-z0-9_-]+)/);
-  if (pathMatch) return pathMatch[1];
+//   // 2. Path-based IDs (Seek, LinkedIn /view/, Lever)
+//   // We look for /job/ or /view/ followed by a sequence
+//   const pathMatch = lowUrl.match(/\/(?:job|view|interstitial)\/([a-z0-9_-]+)/);
+//   if (pathMatch) return pathMatch[1];
 
-  // 3. The "Long Number" Fallback (The 8-12 digit string)
-  const numericMatch = lowUrl.match(/(\d{8,12})/);
-  if (numericMatch) return numericMatch[0];
+//   // 3. The "Long Number" Fallback (The 8-12 digit string)
+//   const numericMatch = lowUrl.match(/(\d{8,12})/);
+//   if (numericMatch) return numericMatch[0];
 
-  return url;
-};
+//   return url;
+// };
 
-const extractJobData = (): JobApplication | null => {
+const extractJobData = (url: string | null): JobApplication | null => {
   try {
     const jobTitle = extractJobTitle();
     const company = extractCompany();
-    const link = extractJobLink();
-    const id = extractJobId(link);
+    const link = url || extractJobLink();
+    const jobId = extractJobId(link);
+    const id = crypto.randomUUID();
 
     return {
       id,
+      jobId,
       jobTitle,
       company,
       link,
@@ -318,7 +320,7 @@ const extractJobData = (): JobApplication | null => {
 function notifySidePanel(attempts = 0) {
   const isMainFrame = window.self === window.top;
   const currentUrl = extractJobLink();
-  console.log("Notify Side Panel Attempt:", attempts, "URL:", currentUrl);
+
   if (!isJobPage(currentUrl)) {
     if (isMainFrame && attempts === 0) {
       chrome.runtime.sendMessage({
@@ -331,7 +333,7 @@ function notifySidePanel(attempts = 0) {
 
   // IFRAME GUARD: Only frames that actually find data should talk
   // Main frame is allowed to proceed to extraction regardless
-  const jobData = extractJobData();
+  const jobData = extractJobData(currentUrl);
 
   if (jobData?.jobTitle && jobData?.company) {
     chrome.runtime.sendMessage({
@@ -367,7 +369,7 @@ chrome.runtime.onMessage.addListener((msg, _, sendResponse) => {
   }
 
   if (msg.type === "GET_CURRENT_STATE" && window.self === window.top) {
-    sendResponse({ job: extractJobData() });
+    sendResponse({ job: extractJobData(null) });
   }
   return true;
 });

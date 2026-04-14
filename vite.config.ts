@@ -17,15 +17,11 @@ export default defineConfig({
       },
       output: {
         entryFileNames: "[name].js", // This ensures it's named 'content.js' not 'content-hash.js'
-        // manualChunks: (id) => {
-        //   if (id.includes("node_modules")) {
-        //     if (id.includes("react") || id.includes("recharts")) {
-        //       return "vendor";
-        //     }
-        //   }
-        // },
+        // let import function in content script work without CORS issues
+        manualChunks: undefined,
       },
     },
+    modulePreload: false,
     outDir: "dist",
   },
 });

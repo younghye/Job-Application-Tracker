@@ -155,3 +155,94 @@ export const sortJobsByDate = (list: JobApplication[]): JobApplication[] => {
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
   );
 };
+
+// export const extractJobId = (url: string): string => {
+//   if (!url) return "";
+//   const lowUrl = url.toLowerCase();
+
+//   // 1. Specific Key-Value patterns (Indeed, Glassdoor, Greenhouse, LinkedIn)
+//   // We look for common ID keys and capture the alphanumeric value
+//   const keyMatch = lowUrl.match(
+//     /(?:jk=|jl=|gh_jid=|currentjobid=|postingid=|joblistingid=)([a-z0-9_-]+)/,
+//   );
+//   if (keyMatch) return keyMatch[1];
+
+//   // 2. Path-based IDs (Seek, LinkedIn /view/, Lever)
+//   // We look for /job/ or /view/ followed by a sequence
+//   const pathMatch = lowUrl.match(/\/(?:job|view|interstitial)\/([a-z0-9_-]+)/);
+//   if (pathMatch) return pathMatch[1];
+
+//   // 3. The "Long Number" Fallback (The 8-12 digit string)
+//   const numericMatch = lowUrl.match(/(\d{8,12})/);
+//   if (numericMatch) return numericMatch[0];
+
+//   return url;
+// };
+const hashString = (str: string): string => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash).toString();
+};
+export const extractJobId = (url: string): string => {
+  if (!url) return "";
+
+  try {
+    const urlObj = new URL(url);
+    const pathname = urlObj.pathname.toLowerCase();
+    const searchParams = urlObj.search.toLowerCase();
+    const hashParams = urlObj.hash.toLowerCase(); // Added for Slalom-style URLs
+
+    // 1. STRICT QUERY/HASH PARAMS (Indeed, Slalom, Greenhouse)
+    // We look for IDs in the ?query or the #hash part
+    const combinedParams = searchParams + hashParams;
+    const queryMatch = combinedParams.match(
+      /(?:currentjobid|jk|jl|gh_jid|jobid|job_id|postingid|joblistingid|post|src)=([a-z0-9]{10,})/,
+    );
+    if (queryMatch) return queryMatch[1];
+
+    // 2. STRICT NUMERIC PATHS (Seek, LinkedIn, Jobspace)
+    // We only take it if the segment is PURELY numbers and 6+ digits
+    const pathParts = pathname.split("/").filter(Boolean);
+    const lastSegment = pathParts[pathParts.length - 1];
+
+    if (/^\d{6,}$/.test(lastSegment)) {
+      return lastSegment;
+    }
+
+    // 3. STRICT UUID/REFERENCE PATTERNS (Workday, UUIDs)
+    const patternMatch = pathname.match(
+      /(jr\d{4,}|r\d{4,}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/,
+    );
+    if (patternMatch) return patternMatch[0];
+
+    // 4. FALLBACK: HASH THE URL
+    // If it's "1068083-frontend-developer" or any other messy string,
+    // we don't save that as the ID. We hash the URL instead.
+    const cleanUrl = (urlObj.origin + urlObj.pathname).replace(/\/$/, "");
+    return "h-" + hashString(cleanUrl);
+  } catch (e) {
+    return "h-" + hashString(url.trim().toLowerCase());
+  }
+};
+
+export const parseCustomDate = (dateStr: string) => {
+  if (!dateStr || typeof dateStr !== "string") return null;
+
+  // 1. Break the string "20-04-2026" into an array: ["20", "04", "2026"]
+  const parts = dateStr.split("-");
+  if (parts.length !== 3) return null;
+
+  // 2. Create a real Date object using (Year, MonthIndex, Day)
+  // Note: Months in JS start at 0 (January is 0, so we do Month - 1)
+  const d = new Date(
+    parseInt(parts[2]), // Year: 2026
+    parseInt(parts[1]) - 1, // Month: 03 (which is April)
+    parseInt(parts[0]), // Day: 20
+  );
+
+  // 3. Check if the date is valid before returning it
+  return isNaN(d.getTime()) ? null : d;
+};
