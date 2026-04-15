@@ -4,38 +4,24 @@ import type { JobApplication } from "../../types/job";
 import Table from "./Table";
 import EditModal from "./EditModal";
 import { getColumns } from "./Columns";
-// import { sortJobsByDate } from "../../utils/jobUtils";
 import { exportCSV, importCSV } from "./CsvService";
 import { useApplications } from "../../hooks/useApplications";
 
-const ApplicationList = () => {
-  // const [data, setData] = useState<JobApplication[]>([]);
+const Applications = () => {
   const [editData, setEditData] = useState<JobApplication | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const data = useApplications();
-  // const [data, setData] = useState<JobApplication[]>([]);
-
-  // useEffect(() => {
-  //   chrome.storage.local.get("applicationList", (result) => {
-  //     const list = result.applicationList as JobApplication[];
-  //     if (list) {
-  //       setData(sortJobsByDate(list));
-  //     }
-  //   });
-  // }, []);
 
   const handleStatusChange = async (id: string, newStatus: string) => {
     const updatedData = data.map((job) =>
       job.id === id ? { ...job, status: newStatus } : job,
     );
     await chrome.storage.local.set({ applicationList: updatedData });
-    // setData(updatedData);
   };
 
   const handleEdit = async (job: JobApplication) => {
     const editData = data.map((item) => (item.id === job.id ? job : item));
     await chrome.storage.local.set({ applicationList: editData });
-    // setData(editData);
     setEditData(null);
   };
 
@@ -44,7 +30,6 @@ const ApplicationList = () => {
 
     const filtered = data.filter((job) => job.id !== id);
     await chrome.storage.local.set({ applicationList: filtered });
-    // setData(filtered);
   };
 
   const handleClearAll = async () => {
@@ -55,21 +40,17 @@ const ApplicationList = () => {
         console.error("Error clearing storage:", chrome.runtime.lastError);
       }
     });
-    // setData([]);
   };
 
   const handleImportCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const sortedData = await importCSV(e, data, columns);
     await chrome.storage.local.set({ applicationList: sortedData });
-    // setData(sortedData);
 
     if (fileInputRef.current) fileInputRef.current.value = "";
     alert("Import successful!");
   };
 
-  const openEditModal = (job: JobApplication) => {
-    setEditData(job);
-  };
+  const openEditModal = (job: JobApplication) => setEditData(job);
 
   const columns = useMemo(
     () => getColumns(handleStatusChange, handleDelete, openEditModal),
@@ -139,4 +120,4 @@ const ApplicationList = () => {
   );
 };
 
-export default ApplicationList;
+export default Applications;

@@ -1,7 +1,9 @@
 import { createColumnHelper } from "@tanstack/react-table";
+import dayjs from "dayjs";
 import type { JobApplication } from "../../types/job";
 import { STATUS_OPTIONS } from "../../types/job";
 import "../../assets/styles/table.css";
+
 const columnHelper = createColumnHelper<JobApplication>();
 
 export const getColumns = (
@@ -26,6 +28,11 @@ export const getColumns = (
   columnHelper.accessor("date", {
     header: "Date",
     size: 100,
+    cell: (info) => {
+      const dateValue = info.getValue();
+      if (!dateValue) return "";
+      return dayjs(dateValue).format("DD-MM-YYYY");
+    },
   }),
   columnHelper.accessor("jobTitle", {
     header: "Job Title",

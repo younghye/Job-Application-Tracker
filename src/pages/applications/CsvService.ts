@@ -1,9 +1,12 @@
 import Papa from "papaparse";
 import type { JobApplication } from "../../types/job";
+import dayjs from "dayjs";
+
 import {
   sortJobsByDate,
   // isExistJobByUrl,
   extractJobId,
+  normalizeDate,
 } from "../../utils/jobUtils";
 
 interface CsvServiceProps {
@@ -13,26 +16,34 @@ interface CsvServiceProps {
 }
 
 export const exportCSV = ({ data, columns }: CsvServiceProps) => {
-  // Map data to use the "Header" strings from your columns
   const csvData = data.map((job) => {
     const row: any = {};
     columns.forEach((col: any) => {
       if (col.accessorKey) {
-        row[col.header] = job[col.accessorKey as keyof JobApplication] || "";
+        let value = job[col.accessorKey as keyof JobApplication] || "";
+
+        // Check if this specific column is the date column
+        if (col.accessorKey === "date" && value) {
+          // Format it to DD-MM-YYYY for the CSV file
+          value = dayjs(value).format("DD-MM-YYYY");
+        }
+
+        row[col.header] = value;
       }
     });
     return row;
   });
 
   const csv = Papa.unparse(csvData);
+
+  // Format the filename date too for consistency (e.g., jobs_export_15-04-2026.csv)
+  const fileDate = dayjs().format("DD-MM-YYYY");
+
   const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.setAttribute(
-    "download",
-    `jobs_export_${new Date().toLocaleDateString()}.csv`,
-  );
+  link.setAttribute("download", `jobs_export_${fileDate}.csv`);
   link.click();
 };
 
@@ -57,8 +68,13 @@ export const importCSV = (
           const job: any = {};
           columns.forEach((col: any) => {
             if (col.accessorKey) {
-              // Ensure we trim whitespace to properly detect empty strings
-              job[col.accessorKey] = row[col.header]?.trim() || "";
+              let value = row[col.header]?.trim() || "";
+
+              if (col.accessorKey === "date") {
+                value = normalizeDate(value);
+              }
+
+              job[col.accessorKey] = value;
             }
           });
 

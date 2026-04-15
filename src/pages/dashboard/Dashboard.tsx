@@ -11,9 +11,8 @@ import {
   type ChartData,
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
-// import type { JobApplication } from "../../types/job";
 import { useApplications } from "../../hooks/useApplications";
-import { parseCustomDate } from "../../utils/jobUtils";
+import dayjs from "dayjs";
 
 ChartJS.register(
   CategoryScale,
@@ -24,81 +23,63 @@ ChartJS.register(
   Tooltip,
   Legend,
 );
+import MetricCard from "./MetricCard";
+import FunnelStep from "./FunnelStep";
 
 const Dashboard = () => {
-  // const [data, setData] = useState<JobApplication[]>([]);
   const [viewType, setViewType] = useState<"weekly" | "monthly">("weekly");
   const [timeOffset, setTimeOffset] = useState(0);
-  const data = useApplications(); // That's it! It handles fetching and listening.
-  // useEffect(() => {
-  //   chrome.storage.local.get("applicationList", (result) => {
-  //     const list = result.applicationList as JobApplication[];
-  //     if (list) setData(list);
-  //   });
-  // }, []);
+  const data = useApplications();
 
   // --- 1. TIME FILTERING LOGIC ---
   const { labels, counts, periodLabel } = useMemo(() => {
-    const getDS = (dateObj: Date | null) => {
-      if (!dateObj) return null;
-      return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, "0")}-${String(dateObj.getDate()).padStart(2, "0")}`;
-    };
-
-    const now = new Date();
+    const now = dayjs();
     let labels: string[] = [];
     let counts: number[] = [];
     let periodLabel = "";
 
     if (viewType === "weekly") {
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay() - timeOffset * 7);
-      startOfWeek.setHours(0, 0, 0, 0);
+      // 1. Get the start of the week (Sunday) based on the timeOffset
+      const startOfWeek = now.subtract(timeOffset, "week").startOf("week");
+      const endOfWeek = startOfWeek.endOf("week");
 
-      const weekDaysStr: string[] = [];
-      for (let i = 0; i < 7; i++) {
-        const d = new Date(startOfWeek);
-        d.setDate(startOfWeek.getDate() + i);
-        const ds = getDS(d);
-        if (ds) weekDaysStr.push(ds);
-      }
+      // 2. Format the period label (e.g., "Apr 12 - Apr 18")
+      periodLabel = `${startOfWeek.format("MMM D")} - ${endOfWeek.format("MMM D")}`;
 
-      const endDate = new Date(startOfWeek);
-      endDate.setDate(startOfWeek.getDate() + 6);
-
-      periodLabel = `${startOfWeek.toLocaleDateString(undefined, { month: "short", day: "numeric" })} - ${endDate.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
       labels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
       counts = new Array(7).fill(0);
 
+      // 3. Fill the counts
       data.forEach((j) => {
-        const jobDateStr = getDS(parseCustomDate(j.date));
-        const dayIndex = jobDateStr ? weekDaysStr.indexOf(jobDateStr) : -1;
-        if (dayIndex !== -1) counts[dayIndex]++;
+        const jobDate = dayjs(j.date);
+        if (
+          jobDate.isAfter(startOfWeek.subtract(1, "ms")) &&
+          jobDate.isBefore(endOfWeek.add(1, "ms"))
+        ) {
+          const dayIndex = jobDate.day(); // 0 (Sun) to 6 (Sat)
+          counts[dayIndex]++;
+        }
       });
 
       return { labels, counts, periodLabel };
     } else {
-      const targetMonthDate = new Date(
-        now.getFullYear(),
-        now.getMonth() - timeOffset,
-        1,
-      );
-      const monthNum = targetMonthDate.getMonth();
-      const yearNum = targetMonthDate.getFullYear();
-      const daysInMonth = new Date(yearNum, monthNum + 1, 0).getDate();
+      // 1. Get the target month based on timeOffset
+      const targetMonth = now.subtract(timeOffset, "month").startOf("month");
+      const daysInMonth = targetMonth.daysInMonth();
 
-      periodLabel = targetMonthDate.toLocaleString("default", {
-        month: "long",
-        year: "numeric",
-      });
+      periodLabel = targetMonth.format("MMMM YYYY");
       labels = Array.from({ length: daysInMonth }, (_, i) =>
         (i + 1).toString(),
       );
       counts = new Array(daysInMonth).fill(0);
 
+      // 2. Fill the counts
       data.forEach((j) => {
-        const d = parseCustomDate(j.date);
-        if (d && d.getMonth() === monthNum && d.getFullYear() === yearNum) {
-          counts[d.getDate() - 1]++;
+        const jobDate = dayjs(j.date);
+        // Check if the job's month and year match our target view
+        if (jobDate.isSame(targetMonth, "month")) {
+          const dayOfMonth = jobDate.date(); // 1 - 31
+          counts[dayOfMonth - 1]++;
         }
       });
 
@@ -125,44 +106,16 @@ const Dashboard = () => {
     const rejects = data.filter((j) => j.status === "Rejected").length;
     const offers = data.filter((j) => j.status === "Offer").length;
 
-    // const ghostLimit = new Date();
-    // ghostLimit.setDate(ghostLimit.getDate() - 21);
-
-    // const ghosted = data.filter(
-    //   (j) => j.status === "Applied" && new Date(j.date) < ghostLimit,
-    // ).length;
     const ghosted = data.filter((j) => {
-      const jobDate = parseCustomDate(j.date);
-      if (!jobDate || j.status !== "Applied") return false;
+      const jobDate = dayjs(j.date);
 
-      // Create a new date object for the "Expiration Date"
-      const ghostDay = new Date(jobDate);
-      ghostDay.setDate(jobDate.getDate() + 21); // Add exactly 21 days
+      if (!jobDate.isValid() || j.status !== "Applied") return false;
 
-      // If the "Ghost Day" is earlier than Today, they've ghosted you
-      return ghostDay < new Date();
+      // 3. Check if the job was applied for more than 21 days ago
+      // .startOf('day') ensures we compare from midnight to midnight
+      const ghostLimit = dayjs().startOf("day").subtract(21, "day");
+      return jobDate.isBefore(ghostLimit);
     }).length;
-
-    //     const ghosted = data.filter((j) => {
-    //   const jobDate = parseCustomDate(j.date);
-    //   if (!jobDate || j.status !== "Applied") return false;
-
-    //   // 1. Get "Right Now" and set it to the very start of today
-    //   const today = new Date();
-    //   today.setHours(0, 0, 0, 0);
-
-    //   // 2. Get the "Ghost Threshold" (21 days ago)
-    //   const ghostLimit = new Date(today);
-    //   ghostLimit.setDate(today.getDate() - 21);
-
-    //   // 3. Normalize jobDate to midnight (just in case)
-    //   const normalizedJobDate = new Date(jobDate);
-    //   normalizedJobDate.setHours(0, 0, 0, 0);
-
-    //   // A job is ghosted if it was applied for BEFORE the ghost limit
-    //   // (e.g., Today is 22nd, limit is 1st. If job was 30th of last month, it's ghosted)
-    //   return normalizedJobDate < ghostLimit;
-    // }).length;
 
     return {
       total,
@@ -181,7 +134,9 @@ const Dashboard = () => {
         No application data yet.
       </div>
     );
-
+  const widthValue = (count: number) => {
+    return analytics.total > 0 ? `${(count / analytics.total) * 100}%` : "0%";
+  };
   return (
     <div className="space-y-6 p-2">
       {/* SECTION 1: METRICS */}
@@ -330,25 +285,25 @@ const Dashboard = () => {
               label="Total Applied"
               count={analytics.total}
               color="bg-indigo-500"
-              width="w-full"
+              width={widthValue(analytics.total)}
             />
             <FunnelStep
               label="Interviews"
               count={analytics.interviews}
               color="bg-blue-500"
-              width="w-3/4"
+              width={widthValue(analytics.interviews)}
             />
             <FunnelStep
               label="Rejected"
               count={analytics.rejects}
               color="bg-rose-500"
-              width="w-1/2"
+              width={widthValue(analytics.rejects)}
             />
             <FunnelStep
               label="Offers"
               count={analytics.offers}
               color="bg-amber-500"
-              width="w-1/4"
+              width={widthValue(analytics.offers)}
             />
           </div>
         </div>
@@ -356,44 +311,5 @@ const Dashboard = () => {
     </div>
   );
 };
-
-// --- SUB-COMPONENTS ---
-const MetricCard = ({ title, value, description, type, highlight }: any) => {
-  const styles: any = {
-    danger: "bg-red-50 border-red-100 text-red-600",
-    warning: "bg-orange-50 border-orange-100 text-orange-600",
-    info: "bg-indigo-50 border-indigo-100 text-indigo-600",
-    success: "bg-emerald-50 border-emerald-100 text-emerald-600",
-  };
-  return (
-    <div
-      className={`${styles[type]} p-5 rounded-3xl border transition-all hover:shadow-md cursor-default`}
-    >
-      <h4 className="uppercase tracking-wider font-black opacity-60">
-        {title}
-      </h4>
-      <p
-        className={`text-3xl font-black my-1 ${highlight && type === "warning" ? "animate-pulse" : ""}`}
-      >
-        {value}
-      </p>
-      <p className="text-[11px] font-medium opacity-80">{description}</p>
-    </div>
-  );
-};
-
-const FunnelStep = ({ label, count, color, width }: any) => (
-  <div className="flex flex-col gap-1.5">
-    <div className="flex justify-between text-[11px] font-bold text-gray-500 px-1">
-      <span>{label}</span>
-      <span className="text-gray-900">{count}</span>
-    </div>
-    <div className="h-7 w-full bg-gray-50 rounded-xl overflow-hidden p-0.5 border border-gray-100/50">
-      <div
-        className={`h-full ${color} ${width} transition-all duration-1000 rounded-[9px] shadow-sm`}
-      />
-    </div>
-  </div>
-);
 
 export default Dashboard;

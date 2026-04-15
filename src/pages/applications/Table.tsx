@@ -1,6 +1,4 @@
 import { flexRender } from "@tanstack/react-table";
-import type { JobApplication } from "../../types/job";
-import "../../assets/styles/table.css";
 import { useState } from "react";
 import {
   getCoreRowModel,
@@ -10,6 +8,8 @@ import {
   type PaginationState,
   type SortingState,
 } from "@tanstack/react-table";
+import type { JobApplication } from "../../types/job";
+import "../../assets/styles/table.css";
 
 const Table = ({
   data,

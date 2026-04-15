@@ -10,9 +10,9 @@ const SidePanel = () => {
   useEffect(() => {
     //  Open a "Port" to the background script.
     const port = chrome.runtime.connect({ name: "sidepanel" });
+
     const msgListener = (msg: any, _sender: any, _sendResponse: any) => {
       if (msg.type === "JOB_UPDATED") {
-        console.log("Received JOB_UPDATED in Side Panel:", msg.payload.job);
         setJob(msg.payload.job);
         setMessage(null);
 
@@ -38,11 +38,9 @@ const SidePanel = () => {
     const fetchData = () => {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs[0]?.id) {
-          // Use the 'frameId' option to ONLY talk to the main page
           chrome.tabs.sendMessage(
             tabs[0].id,
             { type: "GET_CURRENT_STATE" },
-            { frameId: 0 },
             (response) => {
               if (chrome.runtime.lastError) {
                 setTimeout(fetchData, 500);
@@ -60,7 +58,6 @@ const SidePanel = () => {
     fetchData();
 
     return () => {
-      console.log("Side Panel Listener Unmounted");
       chrome.runtime.onMessage.removeListener(msgListener);
       port.disconnect();
     };
@@ -141,13 +138,7 @@ const SidePanel = () => {
             <p className="text-blue-500 text-lg font-semibold">{message}</p>
           </div>
         )} */}
-        <JobForm
-          job={job}
-          // onClose={() => {
-          //   // Handle close action
-          // }}
-          onUpsert={handleUpsert}
-        />
+        <JobForm job={job} onUpsert={handleUpsert} />
       </div>
     </div>
   );

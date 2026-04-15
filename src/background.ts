@@ -1,5 +1,5 @@
 import type { JobApplication } from "./types/job";
-import { extractJobId } from "./utils/jobUtils";
+import { extractJobId, normalizeDate } from "./utils/jobUtils";
 
 chrome.sidePanel
   .setPanelBehavior({ openPanelOnActionClick: true })
@@ -60,6 +60,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         ...message.data,
         jobId: message.data.jobId || extractJobId(message.data.link),
         id: message.data.id || crypto.randomUUID(),
+        date: normalizeDate(message.data.date),
       };
       console.log("Attempting to save job:", newJob);
       if (!newJob.jobId) {

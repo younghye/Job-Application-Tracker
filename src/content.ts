@@ -1,5 +1,5 @@
 import type { JobApplication } from "./types/job";
-import { extractJobId } from "./utils/jobUtils";
+import { extractJobId, normalizeDate } from "./utils/jobUtils";
 let lastUrl = "";
 let isExtensionActive = false;
 
@@ -270,29 +270,6 @@ export const extractJobLink = () => {
   return window.location.href;
 };
 
-// const extractJobId = (url: string): string => {
-//   if (!url) return "";
-//   const lowUrl = url.toLowerCase();
-
-//   // 1. Specific Key-Value patterns (Indeed, Glassdoor, Greenhouse, LinkedIn)
-//   // We look for common ID keys and capture the alphanumeric value
-//   const keyMatch = lowUrl.match(
-//     /(?:jk=|jl=|gh_jid=|currentjobid=|postingid=|joblistingid=)([a-z0-9_-]+)/,
-//   );
-//   if (keyMatch) return keyMatch[1];
-
-//   // 2. Path-based IDs (Seek, LinkedIn /view/, Lever)
-//   // We look for /job/ or /view/ followed by a sequence
-//   const pathMatch = lowUrl.match(/\/(?:job|view|interstitial)\/([a-z0-9_-]+)/);
-//   if (pathMatch) return pathMatch[1];
-
-//   // 3. The "Long Number" Fallback (The 8-12 digit string)
-//   const numericMatch = lowUrl.match(/(\d{8,12})/);
-//   if (numericMatch) return numericMatch[0];
-
-//   return url;
-// };
-
 const extractJobData = (url: string | null): JobApplication | null => {
   try {
     const jobTitle = extractJobTitle();
@@ -307,7 +284,7 @@ const extractJobData = (url: string | null): JobApplication | null => {
       jobTitle,
       company,
       link,
-      date: new Date().toISOString().split("T")[0],
+      date: normalizeDate(new Date()),
       status: "Applied",
     };
   } catch (error) {
