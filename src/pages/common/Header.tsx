@@ -3,44 +3,36 @@ import "../../assets/styles/index.css";
 
 const Header = () => {
   return (
-    <div className="w-full min-h-screen bg-gray-50">
-      <div className="max-w-full mx-auto p-4 md:p-8 lg:p-12">
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b pb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-              🚀 Job Application Tracker
-            </h1>
-          </div>
+    <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+      <div className="flex-1 flex flex-col p-6 md:p-10 overflow-hidden">
+        <header className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6 border-b pb-6 shrink-0">
+          <h1 className="text-2xl font-bold text-slate-900">
+            🚀 Job Application Tracker
+          </h1>
 
-          <nav className="flex  p-1 rounded-xl">
-            <NavLink
-              to="/dashboard"
-              className={({ isActive }) =>
-                `px-6 py-1 text-base font-medium  ${
-                  isActive
-                    ? " text-blue-600 "
-                    : "text-slate-600 hover:text-slate-900"
-                }`
-              }
-            >
-              Dashboard
-            </NavLink>
-            <NavLink
-              to="/applications"
-              className={({ isActive }) =>
-                `px-6 py-1 text-base font-medium  ${
-                  isActive
-                    ? "text-blue-600"
-                    : "text-slate-600 hover:text-slate-900"
-                }`
-              }
-            >
-              Application List
-            </NavLink>
+          <nav className="flex gap-2">
+            {[
+              { to: "/dashboard", label: "Dashboard" },
+              { to: "/applications", label: "Application List" },
+            ].map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                className={({ isActive }) =>
+                  `px-4 py-1 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "text-blue-600"
+                      : "text-slate-500 hover:text-slate-900"
+                  }`
+                }
+              >
+                {link.label}
+              </NavLink>
+            ))}
           </nav>
         </header>
 
-        <main className="bg-white rounded-2xl shadow-sm p-6">
+        <main className="flex-1 bg-white rounded-2xl shadow-sm p-6 overflow-auto">
           <Outlet />
         </main>
       </div>

@@ -1,50 +1,49 @@
 import Papa from "papaparse";
-import type { JobApplication } from "../../types/job";
 import dayjs from "dayjs";
-
+import type { JobApplication } from "../../types/job";
 import {
   sortJobsByDate,
-  // isExistJobByUrl,
   extractJobId,
   normalizeDate,
 } from "../../utils/jobUtils";
 
 interface CsvServiceProps {
   data: JobApplication[];
-  // onImport: (newData: JobApplication[]) => void;
-  columns: any[]; // The result of your getColumns()
+  columns: any[];
 }
 
 export const exportCSV = ({ data, columns }: CsvServiceProps) => {
   const csvData = data.map((job) => {
-    const row: any = {};
-    columns.forEach((col: any) => {
-      if (col.accessorKey) {
-        let value = job[col.accessorKey as keyof JobApplication] || "";
+    const row: Record<string, any> = {};
 
-        // Check if this specific column is the date column
-        if (col.accessorKey === "date" && value) {
-          // Format it to DD-MM-YYYY for the CSV file
-          value = dayjs(value).format("DD-MM-YYYY");
-        }
+    columns.forEach((col) => {
+      if (!col.accessorKey) return;
 
-        row[col.header] = value;
+      let value = job[col.accessorKey as keyof JobApplication] || "";
+
+      // Format date for user readability in Excel/Sheets
+      if (col.accessorKey === "date" && value) {
+        value = dayjs(value).format("DD-MM-YYYY");
       }
+
+      row[col.header] = value;
     });
     return row;
   });
 
   const csv = Papa.unparse(csvData);
-
-  // Format the filename date too for consistency (e.g., jobs_export_15-04-2026.csv)
   const fileDate = dayjs().format("DD-MM-YYYY");
 
+  // \uFEFF is the Byte Order Mark (BOM) to force Excel to show UTF-8 characters correctly
   const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
+
   const link = document.createElement("a");
   link.href = url;
   link.setAttribute("download", `jobs_export_${fileDate}.csv`);
+  document.body.appendChild(link); // Required for some browsers
   link.click();
+  document.body.removeChild(link);
 };
 
 export const importCSV = (
@@ -53,66 +52,52 @@ export const importCSV = (
   columns: any[],
 ): Promise<JobApplication[]> => {
   const file = e.target.files?.[0];
-  if (!file) return Promise.resolve([]);
+  if (!file) return Promise.resolve(existingData);
 
   return new Promise((resolve) => {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
-        const validatedList: JobApplication[] = [];
-        const tempBatch: JobApplication[] = [];
+        const newlyAdded: JobApplication[] = [];
 
         results.data.forEach((row: any) => {
-          // 1. Map CSV headers back to keys
           const job: any = {};
-          columns.forEach((col: any) => {
-            if (col.accessorKey) {
-              let value = row[col.header]?.trim() || "";
 
-              if (col.accessorKey === "date") {
-                value = normalizeDate(value);
-              }
+          // 1. Map CSV Headers back to Object Keys
+          columns.forEach((col) => {
+            if (!col.accessorKey) return;
 
-              job[col.accessorKey] = value;
-            }
+            let value = row[col.header]?.trim() || "";
+            if (col.accessorKey === "date") value = normalizeDate(value);
+
+            job[col.accessorKey] = value;
           });
 
-          if (!job.link) {
-            return;
-          }
+          // 2. Validation: Must have a link
+          if (!job.link) return;
 
-          // 4. If valid, assign ID and add to results
-          // We can call this to ensure the URL is processed, even if we don't use the ID directly here
+          // 3. Metadata Generation
           if (!job.id) job.id = crypto.randomUUID();
           if (!job.jobId) job.jobId = extractJobId(job.link);
 
-          // 3. REQUIREMENT: If URL exists in current state OR in this import batch, skip
-          const existsInStoredData = existingData.some(
-            (data) => data.jobId === job.jobId,
-          );
-          const existsInCurrentBatch = tempBatch.some(
-            (data) => data.jobId === job.jobId,
-          );
+          // 4. Duplicate Check (Stored vs Current Batch)
+          const isDuplicate =
+            existingData.some((d) => d.jobId === job.jobId) ||
+            newlyAdded.some((d) => d.jobId === job.jobId);
 
-          if (existsInStoredData || existsInCurrentBatch) {
-            return;
+          if (!isDuplicate) {
+            newlyAdded.push(job as JobApplication);
           }
-
-          const validJob = job as JobApplication;
-          validatedList.push(validJob);
-          tempBatch.push(validJob);
         });
 
-        // 5. Merge validated new items with existing data and sort
-        const combinedData = [...validatedList, ...existingData];
-        const sortedData = sortJobsByDate(combinedData);
-
+        // 5. Final Merge & Sort
+        const sortedData = sortJobsByDate([...newlyAdded, ...existingData]);
         resolve(sortedData);
       },
-      error: (error) => {
-        console.error("CSV Parsing Error:", error);
-        resolve(existingData); // Return existing data if parse fails
+      error: (err) => {
+        console.error("CSV Import Error:", err);
+        resolve(existingData);
       },
     });
   });

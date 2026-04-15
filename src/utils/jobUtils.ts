@@ -64,7 +64,6 @@ export const extractJobId = (url: string): string => {
 export const normalizeDate = (dateInput: string | Date): string => {
   if (!dateInput) return "";
 
-  // 1. If it's already a Date object, format it immediately
   if (dateInput instanceof Date) {
     return dayjs(dateInput).format("YYYY-MM-DD");
   }
@@ -81,7 +80,6 @@ export const normalizeDate = (dateInput: string | Date): string => {
     "MMM D, YYYY",
   ];
 
-  // The true flag at the end enables strict parsing
   const d = dayjs(dateInput, formats);
 
   return d.isValid() ? d.format("YYYY-MM-DD") : "";
