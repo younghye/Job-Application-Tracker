@@ -4,7 +4,10 @@ import type { JobApplication } from "../../types/job";
 
 const SidePanel = () => {
   const [job, setJob] = useState<JobApplication | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<{
+    text: string;
+    type: "success" | "error" | "info" | "warning";
+  } | null>(null);
 
   useEffect(() => {
     const port = chrome.runtime.connect({ name: "sidepanel" });
@@ -19,7 +22,10 @@ const SidePanel = () => {
             { action: "CHECK_IF_SAVED", jobId: msg.payload.job.jobId },
             (response) => {
               if (response?.existed) {
-                setMessage("This job is already in your list!");
+                setMessage({
+                  text: "This job is already in your list!",
+                  type: "warning",
+                });
               }
             },
           );
@@ -58,17 +64,50 @@ const SidePanel = () => {
   }, []);
 
   const handleUpsert = async (data: JobApplication) => {
-    chrome.runtime.sendMessage({ action: "SAVE_JOB", data }, (response) => {
-      if (chrome.runtime.lastError) return;
+    const checkJobExists = (): Promise<boolean> => {
+      return new Promise((resolve) => {
+        chrome.runtime.sendMessage(
+          { action: "CHECK_IF_SAVED", jobId: data.jobId },
+          (response) => resolve(!!response?.existed),
+        );
+      });
+    };
 
-      if (response?.existed) {
-        setMessage("This job is already in your list!");
-      } else if (response?.success) {
-        setMessage("Job saved successfully!");
-      } else {
-        setMessage(response?.error || "Error occurred while saving.");
+    try {
+      const exists = await checkJobExists();
+
+      if (exists) {
+        const proceed = window.confirm(
+          "This job is already in your list. Do you want to add it as a duplicate?",
+        );
+        if (!proceed) return;
       }
-    });
+
+      chrome.runtime.sendMessage({ action: "SAVE_JOB", data }, (response) => {
+        if (chrome.runtime.lastError) {
+          return setMessage({ text: "Connection error", type: "error" });
+        }
+
+        if (response?.success) {
+          setMessage({ text: "Job saved successfully!", type: "success" });
+        } else {
+          setMessage({
+            text: response?.error || "Failed to save job",
+            type: "error",
+          });
+        }
+      });
+    } catch (error) {
+      console.error("Upsert failed:", error);
+      setMessage({ text: "An unexpected error occurred", type: "error" });
+    }
+  };
+
+  const statusStyles = {
+    success: "bg-emerald-50 border-emerald-100 text-emerald-800",
+    error: "bg-red-50 border-red-100 text-red-800",
+    info: "bg-indigo-50 border-indigo-100 text-indigo-800",
+    warning: "bg-amber-50 border-amber-100 text-amber-800",
   };
 
   return (
@@ -107,12 +146,12 @@ const SidePanel = () => {
         {message && (
           <div
             className={`flex justify-between items-center p-3 mb-5 rounded-xl border animate-in fade-in slide-in-from-top-2 duration-300 ${
-              message.includes("already")
-                ? "bg-amber-50 border-amber-100 text-amber-800"
-                : "bg-indigo-50 border-indigo-100 text-indigo-800"
+              statusStyles[message.type]
             }`}
           >
-            <p className="text-xs font-semibold leading-tight">{message}</p>
+            <p className="text-sm font-semibold leading-tight">
+              {message.text}
+            </p>
             <button
               onClick={() => setMessage(null)}
               className="ml-2 p-1 hover:bg-black/5 rounded-full transition-colors"

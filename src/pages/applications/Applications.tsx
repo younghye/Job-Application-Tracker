@@ -5,10 +5,23 @@ import EditModal from "./EditModal";
 import { getColumns } from "./Columns";
 import { exportCSV, importCSV } from "./CsvService";
 import { useApplications } from "../../hooks/useApplications";
+import toast from "react-hot-toast";
 
 const BTN_STYLE = {
-  gray: "px-3 py-1.5 text-xs font-medium border border-gray-300 text-gray-700 rounded flex items-center gap-1.5 transition-all active:scale-95 duration-200 hover:bg-gray-50",
+  blue: "px-3 py-1.5 text-xs font-medium border border-blue-300 text-blue-600 rounded flex items-center gap-1.5 transition-all active:scale-95 duration-200 hover:bg-blue-50",
   red: "px-3 py-1.5 text-xs font-medium border border-red-200 text-red-600 rounded flex items-center gap-1.5 transition-all active:scale-95 duration-200 hover:bg-red-50",
+};
+
+const setToast = (
+  promise: Promise<any>,
+  successMsg: string,
+  errorMsg: string,
+) => {
+  toast.promise(promise, {
+    loading: "Loading...",
+    success: successMsg,
+    error: errorMsg,
+  });
 };
 
 const Applications = () => {
@@ -20,31 +33,72 @@ const Applications = () => {
     const updatedData = data.map((job) =>
       job.id === id ? { ...job, status: newStatus } : job,
     );
-    await chrome.storage.local.set({ applicationList: updatedData });
+    const promise = chrome.storage.local.set({ applicationList: updatedData });
+    setToast(promise, "Status updated!", "Failed to update status.");
   };
 
   const handleEdit = async (job: JobApplication) => {
     const updated = data.map((item) => (item.id === job.id ? job : item));
-    await chrome.storage.local.set({ applicationList: updated });
+    const promise = chrome.storage.local.set({ applicationList: updated });
+    setToast(promise, "Application updated!", "Failed to update application.");
     setEditData(null);
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Delete this entry?")) return;
+    if (!window.confirm("Delete this application?")) return;
+
     const filtered = data.filter((job) => job.id !== id);
-    await chrome.storage.local.set({ applicationList: filtered });
+    const promise = chrome.storage.local.set({ applicationList: filtered });
+    setToast(promise, "Application deleted!", "Failed to delete application.");
   };
 
   const handleClearAll = async () => {
-    if (!window.confirm("Delete ALL entries? This cannot be undone.")) return;
-    await chrome.storage.local.clear();
+    if (!window.confirm("Delete ALL applications? This cannot be undone."))
+      return;
+
+    const promise = chrome.storage.local.clear();
+    setToast(
+      promise,
+      "All applications cleared!",
+      "Failed to clear applications.",
+    );
+  };
+
+  const handleExportCSV = () => {
+    if (data.length === 0) {
+      toast.error("No applications to export.");
+      return;
+    }
+
+    const promise = exportCSV({
+      data,
+      columns: columns.filter((col) => !(col.meta as any)?.omitFromExport),
+    });
+    setToast(promise, "CSV exported!", "Failed to generate CSV export.");
   };
 
   const handleImportCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const sortedData = await importCSV(e, data, columns);
-    await chrome.storage.local.set({ applicationList: sortedData });
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    alert("Import successful!");
+    const importData = importCSV(e, data, columns);
+
+    toast.promise(importData, {
+      loading: "Loading...",
+      success: (result) => {
+        if (fileInputRef.current) fileInputRef.current.value = "";
+
+        if (result.count === 0) {
+          return "No new applications found to import.";
+        }
+
+        chrome.storage.local.set({ applicationList: result.data });
+
+        return (
+          <span>
+            Imported <b>{result.count}</b> job applications.
+          </span>
+        );
+      },
+      error: "Failed to parse CSV file.",
+    });
   };
 
   const columns = useMemo(
@@ -56,17 +110,7 @@ const Applications = () => {
   return (
     <div className="h-full flex flex-col">
       <div className="flex justify-end gap-2 mb-6 shrink-0">
-        <button
-          onClick={() =>
-            exportCSV({
-              data,
-              columns: columns.filter(
-                (col) => !(col.meta as any)?.omitFromExport,
-              ),
-            })
-          }
-          className={BTN_STYLE.gray}
-        >
+        <button onClick={handleExportCSV} className={BTN_STYLE.blue}>
           <span>📥</span> Export CSV
         </button>
 
@@ -80,7 +124,7 @@ const Applications = () => {
 
         <button
           onClick={() => fileInputRef.current?.click()}
-          className={BTN_STYLE.gray}
+          className={BTN_STYLE.blue}
         >
           <span>📤</span> Import CSV
         </button>

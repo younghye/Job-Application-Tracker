@@ -43,6 +43,7 @@ export const getColumns = (
   columnHelper.accessor("status", {
     header: "Status",
     size: 130,
+    id: "status",
     cell: (info) => (
       <select
         value={info.getValue()}

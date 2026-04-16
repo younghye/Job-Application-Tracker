@@ -39,15 +39,15 @@ const Table = ({
       <table className="min-w-[950px] w-full border-collapse table-fixed bg-white">
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id} className="bg-gray-900">
+            <tr key={headerGroup.id} className="bg-slate-500 ">
               {headerGroup.headers.map((header) => (
                 <th
                   key={header.id}
                   onClick={header.column.getToggleSortingHandler()}
-                  className="px-4 py-3 text-left text-sm font-semibold text-white cursor-pointer hover:bg-gray-800 transition-colors border-r border-gray-700 last:border-r-0"
+                  className="px-4 py-3 text-left text-sm font-semibold text-slate-100 cursor-pointer hover:bg-slate-600 transition-colors border-r border-slate-700"
                   style={{ width: `${header.getSize()}px` }}
                 >
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-2">
                     {flexRender(
                       header.column.columnDef.header,
                       header.getContext(),

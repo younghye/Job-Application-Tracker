@@ -12,49 +12,66 @@ interface CsvServiceProps {
   columns: any[];
 }
 
-export const exportCSV = ({ data, columns }: CsvServiceProps) => {
-  const csvData = data.map((job) => {
-    const row: Record<string, any> = {};
+export const exportCSV = ({
+  data,
+  columns,
+}: CsvServiceProps): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    try {
+      if (!data || data.length === 0) return reject("no-file");
 
-    columns.forEach((col) => {
-      if (!col.accessorKey) return;
+      // 1. Prepare Data
+      const csvData = data.map((job) => {
+        const row: Record<string, any> = {};
 
-      let value = job[col.accessorKey as keyof JobApplication] || "";
+        columns.forEach((col) => {
+          if (!col.accessorKey) return;
+          let value = job[col.accessorKey as keyof JobApplication] || "";
 
-      // Format date for user readability in Excel/Sheets
-      if (col.accessorKey === "date" && value) {
-        value = dayjs(value).format("DD-MM-YYYY");
-      }
+          if (col.accessorKey === "date" && value) {
+            value = dayjs(value).format("DD-MM-YYYY");
+          }
+          row[col.header] = value;
+        });
+        return row;
+      });
 
-      row[col.header] = value;
-    });
-    return row;
+      // 2. Generate CSV String
+      const csv = Papa.unparse(csvData);
+      const fileDate = dayjs().format("DD-MM-YYYY");
+
+      // 3. Create Download
+      const blob = new Blob(["\uFEFF" + csv], {
+        type: "text/csv;charset=utf-8;",
+      });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `jobs_export_${fileDate}.csv`);
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url); // Clean up memory
+
+      resolve();
+    } catch (error) {
+      console.error("CSV Export Error:", error);
+      reject(error);
+    }
   });
-
-  const csv = Papa.unparse(csvData);
-  const fileDate = dayjs().format("DD-MM-YYYY");
-
-  // \uFEFF is the Byte Order Mark (BOM) to force Excel to show UTF-8 characters correctly
-  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-
-  const link = document.createElement("a");
-  link.href = url;
-  link.setAttribute("download", `jobs_export_${fileDate}.csv`);
-  document.body.appendChild(link); // Required for some browsers
-  link.click();
-  document.body.removeChild(link);
 };
-
 export const importCSV = (
   e: React.ChangeEvent<HTMLInputElement>,
   existingData: JobApplication[],
   columns: any[],
-): Promise<JobApplication[]> => {
-  const file = e.target.files?.[0];
-  if (!file) return Promise.resolve(existingData);
+): Promise<{ data: JobApplication[]; count: number }> => {
+  return new Promise((resolve, reject) => {
+    const file = e.target.files?.[0];
+    if (!file) return reject("no-file");
 
-  return new Promise((resolve) => {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
@@ -93,11 +110,11 @@ export const importCSV = (
 
         // 5. Final Merge & Sort
         const sortedData = sortJobsByDate([...newlyAdded, ...existingData]);
-        resolve(sortedData);
+        resolve({ data: sortedData, count: newlyAdded.length });
       },
       error: (err) => {
         console.error("CSV Import Error:", err);
-        resolve(existingData);
+        reject(err);
       },
     });
   });

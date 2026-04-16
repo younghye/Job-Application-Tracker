@@ -62,22 +62,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         id: message.data.id || crypto.randomUUID(),
         date: normalizeDate(message.data.date),
       };
-      console.log("Attempting to save job:", newJob);
+
       if (!newJob.jobId) {
-        sendResponse({ success: false, error: "COULD_NOT_EXTRACT_ID" });
-        return;
-      }
-
-      const isDuplicate = list.some((job) => job.jobId === message.data.jobId);
-
-      if (isDuplicate) {
-        sendResponse({ success: true, existed: true });
+        sendResponse({ success: false, error: "Could not extract job ID" });
         return;
       }
 
       const updatedList = [newJob, ...list];
       chrome.storage.local.set({ applicationList: updatedList }, () => {
-        sendResponse({ success: true, existed: false });
+        sendResponse({ success: true });
       });
     });
     return true;
