@@ -1,11 +1,10 @@
 import { createColumnHelper } from "@tanstack/react-table";
-import dayjs from "dayjs";
 import type { JobApplication } from "../../types/job";
 import { STATUS_OPTIONS } from "../../types/job";
 
 const columnHelper = createColumnHelper<JobApplication>();
 
-export const getColumns = (
+export const Columns = (
   handleStatusChange: (id: string, status: string) => void,
   handleDelete: (id: string) => void,
   openEditModal: (job: JobApplication) => void,
@@ -18,17 +17,13 @@ export const getColumns = (
     header: "Job ID",
     size: 100,
     meta: {
-      // omitFromTable: true,
-      // omitFromExport: true,
+      omitFromTable: true,
+      omitFromExport: true,
     },
   }),
   columnHelper.accessor("date", {
     header: "Date",
     size: 100,
-    cell: (info) => {
-      const dateValue = info.getValue();
-      return dateValue ? dayjs(dateValue).format("DD-MM-YYYY") : "";
-    },
   }),
   columnHelper.accessor("jobTitle", {
     header: "Job Title",
@@ -50,7 +45,7 @@ export const getColumns = (
         onChange={(e) =>
           handleStatusChange(info.row.original.id, e.target.value)
         }
-        className="w-full px-2 py-1 text-xs border border-gray-200 rounded-md bg-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
+        className="w-full px-2 py-1 text-sm border border-gray-200 rounded-md cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
       >
         {STATUS_OPTIONS.map((opt) => (
           <option key={opt} value={opt}>

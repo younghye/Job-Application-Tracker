@@ -10,6 +10,7 @@ import {
   type ChartData,
   type ChartOptions,
 } from "chart.js";
+import { ChevronIcon } from "../../assets/styles/Icons";
 
 ChartJS.register(
   CategoryScale,
@@ -82,22 +83,6 @@ const VolumeChart = ({
     },
   };
 
-  // Helper for Arrow Icons
-  const Chevron = ({ direction }: { direction: "left" | "right" }) => (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d={direction === "left" ? "m15 18-6-6 6-6" : "m9 18 6-6-6-6"} />
-    </svg>
-  );
-
   return (
     <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col h-full min-h-[400px]">
       <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-4">
@@ -111,7 +96,7 @@ const VolumeChart = ({
             onClick={() => setTimeOffset((p) => p + 1)}
             className="p-1.5 hover:bg-white hover:shadow-sm rounded-xl transition-all text-gray-400 hover:text-indigo-600"
           >
-            <Chevron direction="left" />
+            <ChevronIcon direction="left" />
           </button>
 
           <h3 className="text-sm font-bold text-gray-800 min-w-[140px] text-center">
@@ -127,7 +112,7 @@ const VolumeChart = ({
                 : "hover:bg-white hover:shadow-sm text-gray-400 hover:text-indigo-600"
             }`}
           >
-            <Chevron direction="right" />
+            <ChevronIcon direction="right" />
           </button>
         </div>
 

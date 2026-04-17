@@ -3,11 +3,13 @@ import { useForm } from "react-hook-form";
 import type { SubmitHandler } from "react-hook-form";
 import type { JobApplication, JobApplicationFormData } from "../../types/job";
 import { STATUS_OPTIONS } from "../../types/job";
-
-const inputClasses =
-  "w-full mt-1 px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all";
-const labelClasses = "text-sm font-bold text-gray-700  tracking-wide";
-const errorClasses = "text-red-500 text-[11px] mt-1 font-bold";
+import {
+  inputClasses,
+  labelClasses,
+  errorClasses,
+  selectArrow,
+} from "../../assets/styles/styles";
+import { extractJobId } from "../../utils/jobUtils";
 
 interface JobFormProps {
   job: JobApplication | null;
@@ -42,7 +44,7 @@ const JobForm = ({ job, onUpsert }: JobFormProps) => {
   const onSubmit: SubmitHandler<JobApplicationFormData> = (data) => {
     const jobToSave = job
       ? { ...job, ...data }
-      : { ...data, id: crypto.randomUUID() };
+      : { ...data, id: crypto.randomUUID(), jobId: extractJobId(data.link) };
     onUpsert(jobToSave);
   };
 
@@ -65,7 +67,7 @@ const JobForm = ({ job, onUpsert }: JobFormProps) => {
           <label className={labelClasses}>Status</label>
           <select
             {...register("status")}
-            className={`${inputClasses} appearance-none bg-[url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22gray%22%20stroke-width%3D%222%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%20%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.75rem_center] bg-no-repeat pr-10`}
+            className={`${inputClasses} ${selectArrow}`}
           >
             {STATUS_OPTIONS.map((opt) => (
               <option key={opt} value={opt}>

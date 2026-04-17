@@ -28,9 +28,6 @@ export const exportCSV = ({
           if (!col.accessorKey) return;
           let value = job[col.accessorKey as keyof JobApplication] || "";
 
-          if (col.accessorKey === "date" && value) {
-            value = dayjs(value).format("DD-MM-YYYY");
-          }
           row[col.header] = value;
         });
         return row;
@@ -38,7 +35,7 @@ export const exportCSV = ({
 
       // 2. Generate CSV String
       const csv = Papa.unparse(csvData);
-      const fileDate = dayjs().format("DD-MM-YYYY");
+      const fileDate = dayjs().format("YYYY-MM-DD");
 
       // 3. Create Download
       const blob = new Blob(["\uFEFF" + csv], {
@@ -48,7 +45,7 @@ export const exportCSV = ({
 
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `jobs_export_${fileDate}.csv`);
+      link.setAttribute("download", `jobs_applications_export_${fileDate}.csv`);
       document.body.appendChild(link);
       link.click();
 
