@@ -1,6 +1,6 @@
 import { NavLink, Outlet } from "react-router-dom";
-import "../../assets/styles/index.css";
 import { Toaster } from "react-hot-toast";
+import "../../assets/styles/index.css";
 
 const Header = () => {
   return (

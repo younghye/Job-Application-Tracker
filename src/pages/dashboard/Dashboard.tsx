@@ -88,7 +88,6 @@ const Dashboard = () => {
 
   return (
     <div className="flex flex-col gap-8 h-full min-h-0 overflow-y-auto pr-2">
-      {/* SECTION 1: METRICS */}
       <div className="flex-none mt-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {METRIC_CONFIG.map((conf) => (
@@ -103,9 +102,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* SECTION 2 & 3: THE BALANCED ROW */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-auto lg:h-[400px] mt-6">
-        {/* CHART: Spans 2 columns, fills height */}
         <div className="lg:col-span-2 h-full">
           <VolumeChart
             labels={labels}
@@ -118,7 +115,6 @@ const Dashboard = () => {
           />
         </div>
 
-        {/* FUNNEL: Spans 1 column, fills height */}
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col h-full overflow-hidden">
           <h4 className="font-black text-gray-400 uppercase tracking-widest mb-6 shrink-0">
             Status Overview

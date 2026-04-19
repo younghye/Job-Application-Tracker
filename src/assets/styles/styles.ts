@@ -10,9 +10,9 @@ export const selectArrow = `
   .replace(/\s+/g, " ")
   .trim();
 
-export const inputClasses =
+export const inputClass =
   "w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all";
 
-export const labelClasses = "text-sm font-bold text-gray-700";
+export const labelClass = "text-sm font-bold text-gray-700";
 
-export const errorClasses = "text-red-500 text-[11px] mt-1 font-bold";
+export const errorClass = "text-red-500 text-[11px] mt-1 font-bold";

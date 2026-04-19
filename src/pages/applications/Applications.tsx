@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef } from "react";
+import toast from "react-hot-toast";
 import type { JobApplication } from "../../types/job";
 import Table from "./Table";
 import EditModal from "./EditModal";
@@ -6,10 +7,9 @@ import { Columns } from "./Columns";
 import { exportCSV, importCSV } from "./CsvService";
 import { useApplications } from "../../hooks/useApplications";
 import { STATUS_OPTIONS } from "../../types/job";
-import toast from "react-hot-toast";
 import {
-  inputClasses,
-  labelClasses,
+  inputClass,
+  labelClass,
   selectArrow,
 } from "../../assets/styles/styles";
 import {
@@ -39,12 +39,12 @@ const setToast = (
 
 const Applications = () => {
   const [editData, setEditData] = useState<JobApplication | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [globalFilter, setGlobalFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const data = useApplications();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Create a ref that always points to the most recent data
+  const data = useApplications();
   const dataRef = useRef(data);
   dataRef.current = data;
 
@@ -141,12 +141,12 @@ const Applications = () => {
               value={globalFilter}
               onChange={(e) => setGlobalFilter(e.target.value)}
               placeholder="Search all columns..."
-              className={`${inputClasses} pl-9 pr-4`}
+              className={`${inputClass} pl-9 pr-4`}
             />
           </div>
 
           <div className="flex items-center gap-3">
-            <label htmlFor="status-filter" className={labelClasses}>
+            <label htmlFor="status-filter" className={labelClass}>
               Status
             </label>
 
@@ -154,7 +154,7 @@ const Applications = () => {
               id="status-filter"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className={`${inputClasses} ${selectArrow}`}
+              className={`${inputClass} ${selectArrow}`}
             >
               <option value="">All Statuses</option>
               {STATUS_OPTIONS.map((opt) => (

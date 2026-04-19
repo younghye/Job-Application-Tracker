@@ -51,7 +51,7 @@ export const exportCSV = ({
 
       // Cleanup
       document.body.removeChild(link);
-      URL.revokeObjectURL(url); // Clean up memory
+      URL.revokeObjectURL(url);
 
       resolve();
     } catch (error) {
@@ -60,6 +60,7 @@ export const exportCSV = ({
     }
   });
 };
+
 export const importCSV = (
   e: React.ChangeEvent<HTMLInputElement>,
   existingData: JobApplication[],

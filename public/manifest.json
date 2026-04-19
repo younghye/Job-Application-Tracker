@@ -2,15 +2,7 @@
   "manifest_version": 3,
   "name": "Job Application Tracker",
   "version": "1.0",
-  "permissions": [
-    "webNavigation",
-    "storage",
-    "scripting",
-    "sidePanel",
-    "tabs"
-    // "activeTab"
-  ],
-
+  "permissions": ["webNavigation", "storage", "scripting", "sidePanel", "tabs"],
   "host_permissions": [
     "https://*.linkedin.com/*",
     "https://*.indeed.com/*",
@@ -34,7 +26,6 @@
     }
   ],
   "action": {
-    // "default_popup": "index.html"
     "default_title": "Open Job Tracker"
   }
 }

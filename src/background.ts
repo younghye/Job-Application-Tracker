@@ -34,7 +34,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Relay updates from Content Script to Side Panel
   if (message.type === "JOB_UPDATED") {
     if (!isPanelOpen) {
-      // Only the specific Content Script that triggered the onMessage listener.
       sendResponse({ status: "ignored_panel_closed" });
       return false;
     }
@@ -42,9 +41,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.tabs.query({ active: true, currentWindow: true }, ([activeTab]) => {
       // Check if the message is from the tab the user is actually looking at
       if (activeTab && sender.tab && activeTab.id === sender.tab.id) {
-        // OPTIONAL: Only allow the main frame to clear the panel
+        //  Only allow the main frame to update the panel
         if (sender.frameId !== 0) return;
-        // Anyone in the extension listening via chrome.runtime.onMessage.
         chrome.runtime.sendMessage(message);
       }
     });
@@ -86,12 +84,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-/**
- * EVENT LISTENERS
- */
 const handleTabChange = (tab: chrome.tabs.Tab) => {
   if (!isPanelOpen) return;
-
+  console.log("Tab changed:", tab.url);
   const isRestricted =
     !tab.url ||
     tab.url.startsWith("chrome://") ||
@@ -99,7 +94,6 @@ const handleTabChange = (tab: chrome.tabs.Tab) => {
     tab.url.startsWith("about:");
 
   if (isRestricted) {
-    // Force clear because no content script exists here to do it
     chrome.runtime.sendMessage({ type: "JOB_UPDATED", payload: { job: null } });
   } else if (tab.id) {
     // Wake up the content script

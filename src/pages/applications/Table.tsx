@@ -193,7 +193,6 @@ const Table = ({ data, columns, globalFilter, statusFilter }: TableProps) => {
   );
 };
 
-// Internal sub-component for pagination buttons to keep it DRY
 const PaginationButton = ({ onClick, disabled, label }: any) => (
   <button
     onClick={onClick}

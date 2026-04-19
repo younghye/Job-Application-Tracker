@@ -1,6 +1,6 @@
-import type { JobApplication } from "../types/job";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
+import type { JobApplication } from "../types/job";
 
 dayjs.extend(customParseFormat);
 
@@ -18,6 +18,7 @@ const hashString = (str: string): string => {
   }
   return Math.abs(hash).toString();
 };
+
 export const extractJobId = (url: string): string => {
   if (!url) return "";
 
@@ -25,7 +26,7 @@ export const extractJobId = (url: string): string => {
     const urlObj = new URL(url);
     const pathname = urlObj.pathname.toLowerCase();
     const searchParams = urlObj.search.toLowerCase();
-    const hashParams = urlObj.hash.toLowerCase(); // Added for Slalom-style URLs
+    const hashParams = urlObj.hash.toLowerCase();
 
     // 1. STRICT QUERY/HASH PARAMS (Indeed, Slalom, Greenhouse)
     // We look for IDs in the ?query or the #hash part

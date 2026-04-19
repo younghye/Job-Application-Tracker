@@ -4,9 +4,9 @@ import type { SubmitHandler } from "react-hook-form";
 import type { JobApplication, JobApplicationFormData } from "../../types/job";
 import { STATUS_OPTIONS } from "../../types/job";
 import {
-  inputClasses,
-  labelClasses,
-  errorClasses,
+  inputClass,
+  labelClass,
+  errorClass,
   selectArrow,
 } from "../../assets/styles/styles";
 import { extractJobId } from "../../utils/jobUtils";
@@ -52,22 +52,22 @@ const JobForm = ({ job, onUpsert }: JobFormProps) => {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="flex flex-col">
-          <label className={labelClasses}>Date</label>
+          <label className={labelClass}>Date</label>
           <input
             type="date"
             {...register("date", { required: "Required" })}
-            className={inputClasses}
+            className={inputClass}
           />
           {errors.date && (
-            <span className={errorClasses}>{errors.date.message}</span>
+            <span className={errorClass}>{errors.date.message}</span>
           )}
         </div>
 
         <div className="flex flex-col">
-          <label className={labelClasses}>Status</label>
+          <label className={labelClass}>Status</label>
           <select
             {...register("status")}
-            className={`${inputClasses} ${selectArrow}`}
+            className={`${inputClass} ${selectArrow}`}
           >
             {STATUS_OPTIONS.map((opt) => (
               <option key={opt} value={opt}>
@@ -79,50 +79,50 @@ const JobForm = ({ job, onUpsert }: JobFormProps) => {
       </div>
 
       <div className="flex flex-col">
-        <label className={labelClasses}>Job Title</label>
+        <label className={labelClass}>Job Title</label>
         <input
           type="text"
           placeholder="e.g. Senior Frontend Engineer"
           {...register("jobTitle", { required: "Required" })}
-          className={inputClasses}
+          className={inputClass}
         />
         {errors.jobTitle && (
-          <span className={errorClasses}>{errors.jobTitle.message}</span>
+          <span className={errorClass}>{errors.jobTitle.message}</span>
         )}
       </div>
 
       <div className="flex flex-col">
-        <label className={labelClasses}>Company</label>
+        <label className={labelClass}>Company</label>
         <input
           type="text"
           placeholder="e.g. Google"
           {...register("company", { required: "Required" })}
-          className={inputClasses}
+          className={inputClass}
         />
         {errors.company && (
-          <span className={errorClasses}>{errors.company.message}</span>
+          <span className={errorClass}>{errors.company.message}</span>
         )}
       </div>
 
       <div className="flex flex-col">
-        <label className={labelClasses}>Job Link</label>
+        <label className={labelClass}>Job Link</label>
         <input
           type="url"
           placeholder="https://linkedin.com/jobs/..."
           {...register("link", { required: "Required" })}
-          className={inputClasses}
+          className={inputClass}
         />
         {errors.link && (
-          <span className={errorClasses}>{errors.link.message}</span>
+          <span className={errorClass}>{errors.link.message}</span>
         )}
       </div>
 
       <div className="flex flex-col">
-        <label className={labelClasses}>Note</label>
+        <label className={labelClass}>Note</label>
         <textarea
           {...register("note")}
           rows={3}
-          className={inputClasses}
+          className={inputClass}
           placeholder="Any additional details..."
         />
       </div>

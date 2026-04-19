@@ -4,7 +4,6 @@ let lastUrl = "";
 let isExtensionActive = false;
 
 export const isJobPage = (url: string): boolean => {
-  console.log("Checking URL for Job Page:", url);
   if (!url) return false;
 
   const urlLower = url.toLowerCase();
@@ -90,16 +89,11 @@ export const extractCompany = (): string => {
     if (element) {
       let text = "";
 
-      // Special handling for Images (Lever/Greenhouse)
       if (element.tagName === "IMG") {
         text = element.getAttribute("alt") || "";
-      }
-      // Special handling for Meta tags
-      else if (element.tagName === "META") {
+      } else if (element.tagName === "META") {
         text = element.getAttribute("content") || "";
-      }
-      // Standard elements
-      else {
+      } else {
         text = (element as HTMLElement).innerText || "";
       }
 
@@ -114,16 +108,6 @@ export const extractCompany = (): string => {
       }
     }
   }
-
-  // --- 4. ULTIMATE FALLBACK: Document Title ---
-  // Many sites follow "Job Title - Company Name | Site"
-  // const titleParts = document.title.split(/[-|]/);
-  // if (titleParts.length > 1) {
-  //   // Usually the company is the first or second part
-  //   const potentialCompany = titleParts[0].trim();
-  //   if (potentialCompany && potentialCompany.length > 2)
-  //     return potentialCompany;
-  // }
 
   return "";
 };
@@ -203,7 +187,6 @@ export const extractJobLink = () => {
     if (detailLink?.href) return detailLink.href;
 
     // B. Try the "Active" sidebar item if the detail pane hasn't linked yet
-    // Seek often adds a specific ID or state to the selected card
     const activeCard = document.querySelector(
       '[class*="is-selected"], [aria-current="true"]',
     );
@@ -214,7 +197,6 @@ export const extractJobLink = () => {
   // Glassdoor: Use the "selected" class logic we perfected
   if (url.includes("glassdoor")) {
     // 1. Find the <li> or <div> that contains a "selected" or "active" partial class
-    // This is the most common way Glassdoor marks the sidebar item
     const activeItem = document.querySelector(
       'li[class*="selected"], [class*="JobCard_selected"], [data-test="jobListing"].selected, .selected',
     );

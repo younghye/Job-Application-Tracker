@@ -129,7 +129,6 @@ const SidePanel = () => {
         </button>
       </div>
 
-      {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto p-4">
         {message && (
           <div
