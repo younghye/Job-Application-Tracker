@@ -115,7 +115,7 @@ const SidePanel = () => {
       {/* Header with Dashboard Button */}
       <div className="p-4 border-b border-gray-200 shrink-0">
         <button
-          onClick={() => chrome.tabs.create({ url: "dashboard.html" })}
+          onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL("dashboard.html") })}
           className="group flex items-center justify-center gap-2 w-full py-3 px-4 
              bg-gradient-to-r from-indigo-600 to-violet-600 
              hover:from-indigo-500 hover:to-violet-500 

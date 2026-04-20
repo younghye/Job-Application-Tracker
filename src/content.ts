@@ -2,6 +2,7 @@ import type { JobApplication } from "./types/job";
 import { extractJobId, normalizeDate } from "./utils/jobUtils";
 let lastUrl = "";
 let isExtensionActive = false;
+const isMainFrame = window.self === window.top;
 
 export const isJobPage = (url: string): boolean => {
   if (!url) return false;
@@ -20,6 +21,10 @@ export const isJobPage = (url: string): boolean => {
   ].some((p) => urlLower.includes(p));
 
   if (hasSpecificJobId) return true;
+
+  // ATS platforms where any job path is a specific posting (URL structure differs from major boards)
+  const atsHosts = ["apply.workable.com", "jobs.lever.co", "jobs.ashbyhq.com"];
+  if (atsHosts.some((h) => urlLower.includes(h))) return true;
 
   try {
     const urlObj = new URL(urlLower);
@@ -73,8 +78,11 @@ export const extractCompany = (): string => {
     ".logo",
 
     '[class*="employerNameHeading"]', // Glassdoor
-    '[data-testid="inlineHeader-companyName"]', // Indeed
-    '[data-testid="company-name"]', // Indeed
+    // Indeed — scoped to the job detail header so list cards are not matched
+    '.jobsearch-JobInfoHeader [data-testid="inlineHeader-companyName"]',
+    '.jobsearch-JobInfoHeader [data-testid="company-name"]',
+    '[data-testid="inlineHeader-companyName"]',
+    '[data-testid="company-name"]',
 
     // Common Data Attributes & Classes
     '[class*="companyName"]',
@@ -115,6 +123,7 @@ export const extractCompany = (): string => {
 const extractJobTitle = (): string => {
   const selectors = [
     // LinkedIn
+    ".job-details-jobs-unified-top-card__job-title h1 a",
     ".job-details-jobs-unified-top-card__job-title",
     ".job-details-jobs-unified-top-card__job-title a",
     ".jobs-unified-top-card__job-title",
@@ -133,10 +142,15 @@ const extractJobTitle = (): string => {
     const el = document.querySelector(selector) as HTMLElement;
 
     if (el) {
-      const text = el.innerText.trim();
+      // Strip Indeed's loading placeholder and "- job post" suffix
+      const text = el.innerText
+        .trim()
+        .replace(/\s*[-–]\s*job\s*post\s*$/i, "");
       const isVisible = el.offsetWidth > 0 && el.offsetHeight > 0;
       const isJunk =
-        /no\. 1|Employment|Recruitment|Career|Jobs for you|Search/i.test(text);
+        /no\. 1|Employment|Recruitment|Career|Jobs for you|Search|^welcome[\s,]/i.test(
+          text,
+        );
 
       if (text.length > 3 && isVisible && !isJunk) {
         return text;
@@ -277,36 +291,37 @@ const extractJobData = (url: string | null): JobApplication | null => {
 };
 
 function notifySidePanel(attempts = 0) {
-  const isMainFrame = window.self === window.top;
-  const currentUrl = extractJobLink();
+  if (!isExtensionActive) return; // Stop pending retries when panel closes
 
-  if (!isJobPage(currentUrl)) {
-    if (isMainFrame && attempts === 0) {
-      chrome.runtime.sendMessage({
-        type: "JOB_UPDATED",
-        payload: { job: null },
-      });
+  // extractJobLink() finds the canonical job URL (e.g. the active card on Seek/Glassdoor
+  // split-views, where window.location.href is still the generic list URL)
+  const currentUrl = isMainFrame ? extractJobLink() : window.location.href;
+
+  if (isMainFrame) {
+    if (!isJobPage(currentUrl)) {
+      console.log("Not a job page, sending null update.");
+      chrome.runtime.sendMessage({ type: "JOB_UPDATED", payload: { job: null } });
+      return;
     }
-    return;
+    // On first attempt, ask iframes to extract in parallel (job detail may be inside one)
+    if (attempts === 0) {
+      chrome.runtime.sendMessage({ type: "REQUEST_IFRAME_EXTRACT" });
+    }
   }
 
-  // IFRAME GUARD: Only frames that actually find data should talk
-  // Main frame is allowed to proceed to extraction regardless
   const jobData = extractJobData(currentUrl);
-
+  console.log("Extracted Job Data:", jobData, "Attempts:", attempts);
   if (jobData?.jobTitle && jobData?.company) {
-    chrome.runtime.sendMessage({
-      type: "JOB_UPDATED",
-      payload: { job: jobData },
-    });
+    chrome.runtime.sendMessage({ type: "JOB_UPDATED", payload: { job: jobData } });
   } else if (attempts < 8) {
-    // RETRY: If it's a job URL but elements haven't rendered yet
     setTimeout(() => notifySidePanel(attempts + 1), 700);
   }
+  // Iframes silently give up after 8 retries — never send null
 }
 
 const checkUrlChange = () => {
   if (!isExtensionActive) return;
+  if (!isMainFrame) return; // Only the main frame monitors URL changes
 
   const currentUrl = extractJobLink();
   console.log("Checking URL Change:", currentUrl, "Last URL:", lastUrl);
@@ -319,15 +334,19 @@ const checkUrlChange = () => {
 // Listen for triggers from Background or Side Panel
 chrome.runtime.onMessage.addListener((msg, _, sendResponse) => {
   if (msg.type === "PANEL_STATUS") {
-    if (msg.isOpen) {
-      isExtensionActive = msg.isOpen;
-      if (window.self === window.top) {
-        notifySidePanel();
-      }
+    isExtensionActive = msg.isOpen;
+    // Only main frame reacts to panel status — iframes wait for EXTRACT_NOW
+    if (isExtensionActive && isMainFrame) {
+      notifySidePanel();
     }
   }
 
-  if (msg.type === "GET_CURRENT_STATE" && window.self === window.top) {
+  // Background broadcasts this when the main frame asks iframes to extract
+  if (msg.type === "EXTRACT_NOW" && !isMainFrame) {
+    notifySidePanel();
+  }
+
+  if (msg.type === "GET_CURRENT_STATE" && isMainFrame) {
     sendResponse({ job: extractJobData(null) });
   }
   return true;
@@ -337,4 +356,11 @@ chrome.runtime.onMessage.addListener((msg, _, sendResponse) => {
 window.addEventListener("popstate", checkUrlChange);
 
 // check the URL every second. This uses almost ZERO CPU.
-setInterval(checkUrlChange, 1000);
+// The interval is cleared if the extension context is invalidated (e.g. after reload during dev).
+const urlCheckInterval = setInterval(() => {
+  if (!chrome.runtime?.id) {
+    clearInterval(urlCheckInterval);
+    return;
+  }
+  checkUrlChange();
+}, 1000);

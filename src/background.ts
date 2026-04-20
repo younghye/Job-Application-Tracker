@@ -39,15 +39,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     chrome.tabs.query({ active: true, currentWindow: true }, ([activeTab]) => {
-      // Check if the message is from the tab the user is actually looking at
       if (activeTab && sender.tab && activeTab.id === sender.tab.id) {
-        //  Only allow the main frame to update the panel
-        if (sender.frameId !== 0) return;
+        // Iframes may only send valid job data — never null (main frame owns clearing)
+        if (sender.frameId !== 0 && !message.payload?.job) return;
         chrome.runtime.sendMessage(message);
       }
     });
     sendResponse({ status: "relayed" });
     return true;
+  }
+
+  // Main frame requests iframes to attempt extraction when its own attempt fails
+  if (message.type === "REQUEST_IFRAME_EXTRACT") {
+    chrome.tabs.query({ active: true, currentWindow: true }, ([activeTab]) => {
+      if (activeTab?.id) {
+        chrome.tabs.sendMessage(activeTab.id, { type: "EXTRACT_NOW" });
+      }
+    });
+    return false;
   }
 
   if (message.action === "SAVE_JOB") {
