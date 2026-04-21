@@ -15,7 +15,7 @@ const Header = () => {
           },
         }}
       />
-      <div className="flex-1 flex flex-col p-6 md:p-10 overflow-hidden">
+      <div className="flex-1 flex flex-col p-3 sm:p-6 overflow-hidden">
         <header className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6 border-b pb-6 shrink-0">
           <h1 className="text-2xl font-bold text-slate-900">
             🚀 Job Application Tracker

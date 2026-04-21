@@ -21,8 +21,8 @@ import {
 } from "../../assets/styles/Icons";
 
 const BTN_STYLE = {
-  blue: "px-3 py-1.5 text-sm font-bold border border-blue-200 text-blue-600 rounded-md flex items-center gap-1.5 transition-all active:scale-95 duration-200 hover:bg-blue-50 bg-white shadow-sm",
-  red: "px-3 py-1.5 text-sm font-bold border border-red-100 text-red-600 rounded-md flex items-center gap-1.5 transition-all active:scale-95 duration-200 hover:bg-red-50 bg-white shadow-sm",
+  blue: "px-3 py-1.5 text-sm font-semibold border border-blue-200 text-blue-600 rounded-md flex items-center gap-1.5 transition-all active:scale-95 duration-200 hover:bg-blue-50 bg-white shadow-sm",
+  red: "px-3 py-1.5 text-sm font-semibold border border-red-100 text-red-600 rounded-md flex items-center gap-1.5 transition-all active:scale-95 duration-200 hover:bg-red-50 bg-white shadow-sm",
 };
 
 const setToast = (
@@ -209,7 +209,7 @@ const Applications = () => {
       </div>
 
       {/* TABLE AREA */}
-      <div className="flex-1 min-h-0 flex flex-col gap-8">
+      <div className="flex-1 min-h-0 flex flex-col">
         {dataRef.current && dataRef.current.length > 0 ? (
           <Table
             data={dataRef.current}

@@ -72,9 +72,10 @@ const Table = ({ data, columns, globalFilter, statusFilter }: TableProps) => {
   }, [data]);
 
   return (
-    <div className="w-full overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-      <table className="min-w-[950px] w-full border-collapse table-fixed bg-white">
-        <thead>
+    <div className="w-full flex-1 flex flex-col rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+      <div className="flex-1 overflow-auto min-h-0">
+      <table className="w-full border-collapse table-fixed bg-white min-w-[1020px]">
+        <thead className="sticky top-0 z-10">
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id} className="bg-slate-500 ">
               {headerGroup.headers.map((header) => (
@@ -82,7 +83,7 @@ const Table = ({ data, columns, globalFilter, statusFilter }: TableProps) => {
                   key={header.id}
                   onClick={header.column.getToggleSortingHandler()}
                   className="px-4 py-3 text-left text-sm font-semibold text-slate-100 cursor-pointer hover:bg-slate-600 transition-colors border-r border-slate-700"
-                  style={{ width: `${header.getSize()}px` }}
+                  style={{ width: `${header.column.getSize()}px` }}
                 >
                   <div className="flex items-center gap-2">
                     {flexRender(
@@ -140,9 +141,10 @@ const Table = ({ data, columns, globalFilter, statusFilter }: TableProps) => {
           })}
         </tbody>
       </table>
+      </div>
 
       {/* PAGINATION CONTROLS */}
-      <div className="flex items-center justify-between p-3 bg-gray-50 border-t border-gray-200">
+      <div className="flex-none flex items-center justify-between p-3 bg-gray-50 border-t border-gray-200">
         <div className="text-xs text-gray-500">
           Showing{" "}
           <span className="font-bold text-gray-900">
