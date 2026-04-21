@@ -4,15 +4,12 @@ import "../../assets/styles/index.css";
 
 const Header = () => {
   return (
-    <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+    <div className="h-screen flex flex-col bg-slate-50 overflow-hidden">
       <Toaster
         position="top-center"
         toastOptions={{
           duration: 4000,
-          style: {
-            fontSize: "14px",
-            padding: "16px 24px",
-          },
+          style: { fontSize: "14px", padding: "16px 24px" },
         }}
       />
       <div className="flex-1 flex flex-col p-3 sm:p-6 overflow-hidden">
@@ -43,7 +40,7 @@ const Header = () => {
           </nav>
         </header>
 
-        <main className="flex-1 bg-white rounded-2xl shadow-sm p-6 overflow-auto">
+        <main className="flex-1 flex flex-col bg-white rounded-2xl shadow-sm p-6 overflow-y-auto">
           <Outlet />
         </main>
       </div>

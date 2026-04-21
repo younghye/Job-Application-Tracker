@@ -84,8 +84,8 @@ const VolumeChart = ({
   };
 
   return (
-    <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col h-full min-h-[400px]">
-      <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-4">
+    <div className="flex flex-col h-full w-full min-h-0">
+      <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-4 shrink-0">
         <h4 className="font-black text-gray-400 uppercase tracking-widest">
           Application Volume
         </h4>

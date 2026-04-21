@@ -87,9 +87,9 @@ const Dashboard = () => {
   }, [data, viewType, timeOffset]);
 
   return (
-    <div className="flex flex-col gap-8 h-full min-h-0 overflow-y-auto pr-2">
-      <div className="flex-none mt-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="flex-1 flex flex-col gap-8">
+      <div className="shrink-0 h-auto lg:h-[18vh] lg:min-h-[120px] lg:max-h-[180px]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 h-full">
           {METRIC_CONFIG.map((conf) => (
             <MetricCard
               key={conf.key}
@@ -102,8 +102,8 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-auto lg:h-[400px] mt-6">
-        <div className="lg:col-span-2 h-full">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:flex-1 lg:items-stretch lg:min-h-[400px] lg:pb-0">
+        <div className="lg:col-span-2 flex flex-col p-6 rounded-3xl border border-gray-100 shadow-sm min-h-[350px] lg:h-full lg:min-h-0 overflow-hidden">
           <VolumeChart
             labels={labels}
             counts={counts}
@@ -115,17 +115,15 @@ const Dashboard = () => {
           />
         </div>
 
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col h-full overflow-hidden">
-          <h4 className="font-black text-gray-400 uppercase tracking-widest mb-6 shrink-0">
+        <div className="flex flex-col bg-white p-6 rounded-3xl border border-gray-100 shadow-sm lg:h-full overflow-hidden">
+          <h4 className="font-black text-gray-400 uppercase tracking-widest mb-6 shrink-0 mt-3">
             Status Overview
           </h4>
-
-          <div className="flex-1 flex flex-col justify-center space-y-6">
+          <div className="flex flex-col gap-4 lg:flex-1 lg:justify-evenly">
             {FUNNEL_CONFIG.map((step) => {
               const count = analytics[step.key as keyof typeof analytics];
               const percentage =
                 analytics.total > 0 ? (count / analytics.total) * 100 : 0;
-
               return (
                 <FunnelStep
                   key={step.key}
