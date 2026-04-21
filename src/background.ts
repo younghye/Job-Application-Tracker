@@ -6,6 +6,7 @@ chrome.sidePanel
   .catch((error) => console.error(error));
 
 let isPanelOpen = false;
+let lastRelayedJobId = "";
 
 // 1. BROADCASTER: Tell all tabs if the panel is open or closed
 const broadcastStatus = (isOpen: boolean) => {
@@ -38,10 +39,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return false;
     }
 
+    // Deduplicate synchronously before async tab query to avoid race conditions
+    if (sender.frameId !== 0 && !message.payload?.job) {
+      sendResponse({ status: "ignored_iframe_null" });
+      return false;
+    }
+    const jobId = message.payload?.job?.jobId ?? "";
+    if (jobId && jobId === lastRelayedJobId) {
+      sendResponse({ status: "duplicate" });
+      return false;
+    }
+    lastRelayedJobId = jobId;
+
     chrome.tabs.query({ active: true, currentWindow: true }, ([activeTab]) => {
       if (activeTab && sender.tab && activeTab.id === sender.tab.id) {
-        // Iframes may only send valid job data — never null (main frame owns clearing)
-        if (sender.frameId !== 0 && !message.payload?.job) return;
         chrome.runtime.sendMessage(message);
       }
     });
@@ -95,7 +106,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 const handleTabChange = (tab: chrome.tabs.Tab) => {
   if (!isPanelOpen) return;
-  console.log("Tab changed:", tab.url);
   const isRestricted =
     !tab.url ||
     tab.url.startsWith("chrome://") ||

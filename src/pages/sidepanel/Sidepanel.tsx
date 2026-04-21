@@ -13,7 +13,9 @@ const SidePanel = () => {
   useEffect(() => {
     const port = chrome.runtime.connect({ name: "sidepanel" });
 
-    const msgListener = (msg: any) => {
+    const msgListener = (msg: any, sender: chrome.runtime.MessageSender) => {
+      // Ignore direct messages from content scripts — only accept relayed messages from the background
+      if (sender.tab) return;
       if (msg.type === "JOB_UPDATED") {
         setJob(msg.payload.job);
         setMessage(null);
@@ -115,7 +117,9 @@ const SidePanel = () => {
       {/* Header with Dashboard Button */}
       <div className="p-4 border-b border-gray-200 shrink-0">
         <button
-          onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL("dashboard.html") })}
+          onClick={() =>
+            chrome.tabs.create({ url: chrome.runtime.getURL("dashboard.html") })
+          }
           className="group flex items-center justify-center gap-2 w-full py-3 px-4 
              bg-gradient-to-r from-indigo-600 to-violet-600 
              hover:from-indigo-500 hover:to-violet-500 
