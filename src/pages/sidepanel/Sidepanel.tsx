@@ -20,6 +20,13 @@ const SidePanel = () => {
         setJob(msg.payload.job);
         setMessage(null);
 
+        if (msg.payload.extractionFailed) {
+          setMessage({
+            text: "Could not extract job data from this page.",
+            type: "info",
+          });
+        }
+
         if (msg.payload.job?.jobId) {
           chrome.runtime.sendMessage(
             { action: "CHECK_IF_SAVED", jobId: msg.payload.job.jobId },
@@ -37,28 +44,6 @@ const SidePanel = () => {
     };
 
     chrome.runtime.onMessage.addListener(msgListener);
-
-    const fetchData = () => {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs[0]?.id) {
-          chrome.tabs.sendMessage(
-            tabs[0].id,
-            { type: "GET_CURRENT_STATE" },
-            (response) => {
-              if (chrome.runtime.lastError) {
-                setTimeout(fetchData, 500);
-              } else if (response?.job) {
-                setJob(response.job);
-              } else {
-                setJob(null);
-              }
-            },
-          );
-        }
-      });
-    };
-
-    fetchData();
 
     return () => {
       chrome.runtime.onMessage.removeListener(msgListener);
@@ -152,7 +137,11 @@ const SidePanel = () => {
           </div>
         )}
 
-        <JobForm job={job} onUpsert={handleUpsert} />
+        <JobForm
+          key={job?.jobId ?? "empty"}
+          job={job}
+          onUpsert={handleUpsert}
+        />
       </div>
     </div>
   );

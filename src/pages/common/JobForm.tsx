@@ -26,18 +26,22 @@ const JobForm = ({ job, onUpsert }: JobFormProps) => {
     defaultValues: job || {},
   });
 
+  const clearForm = () => {
+    reset({
+      date: new Date().toISOString().split("T")[0],
+      jobTitle: "",
+      company: "",
+      status: "Applied",
+      link: "",
+      note: "",
+    });
+  };
+
   useEffect(() => {
     if (job) {
       reset(job);
     } else {
-      reset({
-        date: new Date().toISOString().split("T")[0],
-        jobTitle: "",
-        company: "",
-        status: "Applied",
-        link: "",
-        note: "",
-      });
+      clearForm();
     }
   }, [job, reset]);
 
@@ -127,7 +131,14 @@ const JobForm = ({ job, onUpsert }: JobFormProps) => {
         />
       </div>
 
-      <div className="flex justify-end pt-4">
+      <div className="flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={() => clearForm()}
+          className="px-8 py-2 rounded-lg font-bold text-sm border border-gray-300 text-gray-600 hover:bg-gray-100 transition-all active:scale-95"
+        >
+          Clear
+        </button>
         <button
           type="submit"
           className="bg-green-700 hover:bg-green-800 text-white px-8 py-2 rounded-lg font-bold text-sm transition-all active:scale-95 shadow-md shadow-green-200"

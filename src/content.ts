@@ -71,6 +71,12 @@ function notifySidePanel(attempts = 0) {
     if (isMainFrame)
       chrome.runtime.sendMessage({ type: "REQUEST_IFRAME_EXTRACT" });
     setTimeout(() => notifySidePanel(attempts + 1), 700);
+  } else {
+    // All retries exhausted — tell the panel extraction failed
+    chrome.runtime.sendMessage({
+      type: "JOB_UPDATED",
+      payload: { job: null, extractionFailed: true },
+    });
   }
 }
 
