@@ -114,7 +114,7 @@ const JobForm = ({ job, onUpsert }: JobFormProps) => {
           )}
         </div>
 
-        <div className="flex flex-col">
+        <div className="flex flex-col md:col-span-2">
           <label className={labelClass}>Job Link</label>
           <input
             type="url"

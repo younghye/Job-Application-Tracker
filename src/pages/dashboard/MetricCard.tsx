@@ -7,12 +7,12 @@ const MetricCard = ({ title, value, description, type }: any) => {
   };
   return (
     <div
-      className={`${styles[type]} p-6 rounded-3xl border transition-all hover:shadow-md cursor-default flex flex-col justify-center h-full`}
+      className={`${styles[type]} p-5 rounded-3xl border transition-all hover:shadow-md cursor-default flex flex-col justify-center h-full`}
     >
-      <h4 className="text-base uppercase tracking-wider font-black opacity-60">
+      <h4 className="text-sm uppercase tracking-wider font-black opacity-60">
         {title}
       </h4>
-      <p className={`text-3xl lg:text-4xl font-black my-1 `}>{value}</p>
+      <p className={`text-2xl lg:text-3xl font-black my-1 `}>{value}</p>
       <p className="text-sm font-medium opacity-80">{description}</p>
     </div>
   );

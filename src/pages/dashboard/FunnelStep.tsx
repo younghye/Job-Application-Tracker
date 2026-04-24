@@ -1,6 +1,6 @@
 const FunnelStep = ({ label, count, color, width }: any) => (
   <div className="flex flex-col gap-1.5">
-    <div className="flex justify-between text-[13px] font-bold text-gray-500 px-1">
+    <div className="flex justify-between text-sm font-semibold text-slate-600 px-1">
       <span>{label}</span>
       <span className="text-gray-900">{count}</span>
     </div>

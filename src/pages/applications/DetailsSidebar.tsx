@@ -1,19 +1,19 @@
 import dayjs from "dayjs";
 import type { JobApplication } from "../../types/job";
 import { labelClass } from "../../assets/styles/styles";
-interface ProfileViewProps {
+interface DetailsSidebarProps {
   selectedJob: JobApplication;
   setSelectedJob: (job: JobApplication | null) => void;
   openEditModal: (job: JobApplication) => void;
   handleDelete: (id: string) => void;
 }
 
-const ProfileView = ({
+const DetailsSidebar = ({
   selectedJob,
   setSelectedJob,
   openEditModal,
   handleDelete,
-}: ProfileViewProps) => {
+}: DetailsSidebarProps) => {
   return (
     <>
       <div
@@ -88,34 +88,50 @@ const ProfileView = ({
                 {(selectedJob.interviews ?? []).length > 0 ? (
                   [...(selectedJob.interviews || [])]
                     .sort((a, b) => dayjs(a.date).diff(dayjs(b.date)))
-                    .map((int, idx) => (
-                      <div className="space-y-5 ml-2">
-                        <div key={idx} className="flex gap-4 relative">
-                          {idx !==
-                            (selectedJob.interviews?.length || 0) - 1 && (
-                            <div className="absolute left-[7px] top-5 w-[2px] h-full bg-gray-100" />
-                          )}
-                          <div
-                            className={`w-4 h-4 rounded-full border-2 border-white ring-1 z-10 mt-1 ${
-                              dayjs(int.date).isAfter(dayjs())
-                                ? "bg-amber-500 ring-amber-200"
-                                : "bg-slate-300 ring-slate-100"
-                            }`}
-                          />
-                          <div className="flex-1 bg-white p-3 rounded-xl border border-gray-100 shadow-sm mb-2">
-                            <p className="text-sm text-slate-600 font-semibold">
-                              {int.type}
-                            </p>
-                            <p className="text-sm text-slate-600 ">
-                              {dayjs(int.date).format("MMM D , h:mm A")}
-                            </p>
+                    .map((int, idx) => {
+                      const isSingle = selectedJob.interviews?.length === 1;
+
+                      return (
+                        /* If single, remove the 'ml-2' and 'space-y-5' to keep it flush with the left */
+                        <div
+                          key={idx}
+                          className={`${isSingle ? "" : "ml-2 space-y-5"}`}
+                        >
+                          <div className="flex gap-4 relative">
+                            {/* 1. Only show the connecting line if NOT single AND NOT the last item */}
+                            {!isSingle &&
+                              idx !==
+                                (selectedJob.interviews?.length || 0) - 1 && (
+                                <div className="absolute left-[7px] top-5 w-[2px] h-full bg-gray-100" />
+                              )}
+
+                            {/* 2. Only show the Timeline Dot if NOT a single interview */}
+                            {!isSingle && (
+                              <div
+                                className={`w-4 h-4 rounded-full border-2 border-white ring-1 z-10 mt-1 shrink-0 ${
+                                  dayjs(int.date).isAfter(dayjs())
+                                    ? "bg-amber-500 ring-amber-200"
+                                    : "bg-slate-300 ring-slate-100"
+                                }`}
+                              />
+                            )}
+
+                            {/* 3. The Content Card */}
+                            <div className="flex-1 bg-white p-3 rounded-xl border border-gray-100 shadow-sm mb-2">
+                              <p className="text-sm text-slate-600 font-semibold">
+                                {int.type}
+                              </p>
+                              <p className="text-sm text-slate-600 ">
+                                {dayjs(int.date).format("MMM D, h:mm A")}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                 ) : (
                   <div className="text-center py-6 border border-dashed border-gray-200 rounded-xl">
-                    <p className="text-sm text-slate-600">
+                    <p className="text-sm text-slate-300">
                       No interviews scheduled.
                     </p>
                   </div>
@@ -154,4 +170,4 @@ const ProfileView = ({
   );
 };
 
-export default ProfileView;
+export default DetailsSidebar;

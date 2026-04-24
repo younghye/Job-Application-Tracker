@@ -85,55 +85,56 @@ const VolumeChart = ({
 
   return (
     <div className="flex flex-col h-full w-full min-h-0">
-      <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-4 shrink-0">
-        <h4 className="font-black text-gray-400 uppercase tracking-widest">
+      <div className="flex flex-wrap items-center justify-between mb-8 gap-y-4 gap-x-2 shrink-0">
+        <p className="font-black text-sm text-slate-500 uppercase tracking-widest shrink-0">
           Application Volume
-        </h4>
-
-        {/* PERIOD NAVIGATION */}
-        <div className="flex items-center gap-2 bg-gray-50 p-1 px-2 rounded-2xl border border-gray-100">
-          <button
-            onClick={() => setTimeOffset((p) => p + 1)}
-            className="p-1.5 hover:bg-white hover:shadow-sm rounded-xl transition-all text-gray-400 hover:text-indigo-600"
-          >
-            <ChevronIcon direction="left" />
-          </button>
-
-          <h3 className="text-sm font-bold text-gray-800 min-w-[140px] text-center">
-            {periodLabel}
-          </h3>
-
-          <button
-            onClick={() => setTimeOffset((p) => Math.max(0, p - 1))}
-            disabled={timeOffset === 0}
-            className={`p-1.5 rounded-xl transition-all ${
-              timeOffset === 0
-                ? "opacity-20 grayscale cursor-not-allowed"
-                : "hover:bg-white hover:shadow-sm text-gray-400 hover:text-indigo-600"
-            }`}
-          >
-            <ChevronIcon direction="right" />
-          </button>
-        </div>
-
-        {/* VIEW TOGGLE */}
-        <div className="flex bg-gray-100 p-1 rounded-xl">
-          {(["weekly", "monthly"] as const).map((type) => (
+        </p>
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
+          {/* PERIOD NAVIGATION */}
+          <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-2xl border border-gray-100 shrink-0">
             <button
-              key={type}
-              onClick={() => {
-                setViewType(type);
-                setTimeOffset(0);
-              }}
-              className={`px-4 py-1.5 text-[12px] font-bold rounded-lg transition-all ${
-                viewType === type
-                  ? "bg-white text-indigo-600 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
+              onClick={() => setTimeOffset((p) => p + 1)}
+              className="p-1.5 hover:bg-white hover:shadow-sm rounded-xl transition-all text-gray-400 hover:text-indigo-600"
+            >
+              <ChevronIcon direction="left" />
+            </button>
+
+            <p className="text-sm font-bold text-gray-800 min-w-[140px] text-center">
+              {periodLabel}
+            </p>
+
+            <button
+              onClick={() => setTimeOffset((p) => Math.max(0, p - 1))}
+              disabled={timeOffset === 0}
+              className={`p-1.5 rounded-xl transition-all ${
+                timeOffset === 0
+                  ? "opacity-20 grayscale cursor-not-allowed"
+                  : "hover:bg-white hover:shadow-sm text-gray-400 hover:text-indigo-600"
               }`}
             >
-              {type === "weekly" ? "Week" : "Month"}
+              <ChevronIcon direction="right" />
             </button>
-          ))}
+          </div>
+
+          {/* VIEW TOGGLE */}
+          <div className="flex bg-gray-100 p-1 rounded-xl shrink-0">
+            {(["weekly", "monthly"] as const).map((type) => (
+              <button
+                key={type}
+                onClick={() => {
+                  setViewType(type);
+                  setTimeOffset(0);
+                }}
+                className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${
+                  viewType === type
+                    ? "bg-white text-indigo-600 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {type === "weekly" ? "Week" : "Month"}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

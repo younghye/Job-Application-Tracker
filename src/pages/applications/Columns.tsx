@@ -96,19 +96,19 @@ export const Columns = (
         dayjs(a.date).diff(dayjs(b.date)),
       );
 
-      // in the future or started within the last 2 hours
+      // in the future or started within the last 20 minute
+      const activeBuffer = dayjs().subtract(20, "minute");
       const next =
-        sorted.find((i) =>
-          dayjs(i.date).isAfter(dayjs().subtract(2, "hours")),
-        ) || sorted[sorted.length - 1];
+        sorted.find((i) => dayjs(i.date).isAfter(activeBuffer)) ||
+        sorted[sorted.length - 1];
 
-      const isUpcoming = dayjs(next.date).isAfter(dayjs());
+      const isActive = dayjs(next.date).isAfter(activeBuffer);
       const hoverText = `${next.type || "Interview"} • ${dayjs(next.date).format("MMM D, HH:mm")}`;
 
       return (
         <div className="flex items-center gap-2" title={hoverText}>
           <span
-            className={` ${isUpcoming ? "text-emerald-700" : "text-slate-700"}`}
+            className={` ${isActive ? "text-emerald-500" : "text-slate-700"}`}
           >
             {`${next.type || "Interview"} • ${dayjs(next.date).format("MMM D, HH:mm")}`}
           </span>

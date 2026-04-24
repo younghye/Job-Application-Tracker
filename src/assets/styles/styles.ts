@@ -15,4 +15,4 @@ export const inputClass =
 
 export const labelClass = "text-sm font-bold text-gray-700 mb-1 ";
 
-export const errorClass = "text-red-500 text-[11px] mt-1 font-bold";
+export const errorClass = "text-red-500 text-[11px] mt-1 font-medium";

@@ -10,7 +10,7 @@ import {
   type SortingState,
 } from "@tanstack/react-table";
 import type { JobApplication } from "../../types/job";
-import ProfileView from "./ProfileView";
+import DetailsSidebar from "./DetailsSidebar";
 
 interface TableProps {
   data: JobApplication[];
@@ -101,7 +101,7 @@ const Table = ({
                         header.column.columnDef.header,
                         header.getContext(),
                       )}
-                      <span className="text-[10px]">
+                      <span className="text-xs">
                         {header.column.getIsSorted() === "asc" && " ▲"}
                         {header.column.getIsSorted() === "desc" && " ▼"}
                       </span>
@@ -170,7 +170,7 @@ const Table = ({
 
       {/* --- SIDE DRAWER --- */}
       {selectedJob && (
-        <ProfileView
+        <DetailsSidebar
           selectedJob={selectedJob}
           setSelectedJob={setSelectedJob}
           openEditModal={openEditModal}

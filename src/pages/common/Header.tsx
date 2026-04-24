@@ -12,7 +12,7 @@ const Header = () => {
           style: { fontSize: "14px", padding: "16px 24px" },
         }}
       />
-      <div className="flex-1 flex flex-col p-3 sm:p-6 overflow-hidden">
+      <div className="flex-1 flex flex-col p-6 max-w-screen-2xl w-full mx-auto max-h-[960px] overflow-y-auto custom-scrollbar">
         <header className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6 border-b pb-6 shrink-0">
           <h1 className="text-2xl font-bold text-slate-900">
             🚀 Job Application Tracker
