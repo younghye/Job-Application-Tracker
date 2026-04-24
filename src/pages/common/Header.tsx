@@ -29,7 +29,7 @@ const Header = () => {
                 className={({ isActive }) =>
                   `px-4 py-1 text-base font-bold transition-colors ${
                     isActive
-                      ? "text-blue-600"
+                      ? "bg-blue-50 text-blue-600 rounded-lg"
                       : "text-slate-500 hover:text-slate-900"
                   }`
                 }

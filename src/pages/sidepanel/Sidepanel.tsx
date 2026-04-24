@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import JobForm from "../common/JobForm";
 import type { JobApplication } from "../../types/job";
-import { HomeIcon, XIcon } from "../../assets/styles/Icons";
+import { HomeIcon, XIcon } from "../../assets/Icons";
 
 const SidePanel = () => {
   const [job, setJob] = useState<JobApplication | null>(null);

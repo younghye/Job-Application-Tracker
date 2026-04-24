@@ -108,3 +108,21 @@ export const ChevronIcon = ({ direction }: { direction: "left" | "right" }) => (
     <path d={direction === "left" ? "m15 18-6-6 6-6" : "m9 18 6-6-6-6"} />
   </svg>
 );
+export const NoteIcon = ({ title }: { title?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="text-blue-400 shrink-0 opacity-80"
+  >
+    {title && <title>{title}</title>}
+    <path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3z" />
+    <path d="M15 3v6h6" />
+  </svg>
+);

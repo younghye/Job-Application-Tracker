@@ -18,7 +18,7 @@ import {
   ImportIcon,
   XIcon,
   TrashIcon,
-} from "../../assets/styles/Icons";
+} from "../../assets/Icons";
 
 const BTN_STYLE = {
   blue: "px-3 py-1.5 text-sm font-semibold border border-blue-200 text-blue-600 rounded-md flex items-center gap-1.5 transition-all active:scale-95 duration-200 hover:bg-blue-50 bg-white shadow-sm",
@@ -216,6 +216,8 @@ const Applications = () => {
             columns={columns.filter((col) => !(col.meta as any)?.omitFromTable)}
             globalFilter={globalFilter}
             statusFilter={statusFilter}
+            openEditModal={(job) => setEditData(job)}
+            handleDelete={(id) => handleDelete(id)}
           />
         ) : (
           <div className="h-full flex items-center justify-center border-2 border-dashed border-gray-100 rounded-[24px]">

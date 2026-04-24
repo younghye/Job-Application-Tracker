@@ -10,7 +10,7 @@ import {
   type ChartData,
   type ChartOptions,
 } from "chart.js";
-import { ChevronIcon } from "../../assets/styles/Icons";
+import { ChevronIcon } from "../../assets/Icons";
 
 ChartJS.register(
   CategoryScale,

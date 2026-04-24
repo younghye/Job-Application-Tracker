@@ -16,9 +16,9 @@ const EditModal = ({ job, onClose, onEdit }: EditModalProps) => {
       isOpen={job !== null}
       onRequestClose={onClose}
       overlayClassName="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-      className="bg-white w-full max-w-lg rounded-2xl shadow-xl outline-none overflow-hidden animate-in fade-in zoom-in duration-200"
+      className="bg-white w-full max-w-lg rounded-2xl shadow-xl outline-none flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-200"
     >
-      <div className="flex items-center justify-between p-6 border-b border-gray-100">
+      <div className="flex items-center justify-between p-6 border-b border-gray-100 shrink-0">
         <h2 className="text-lg font-bold text-gray-800">
           Edit Job Application
         </h2>
@@ -30,7 +30,7 @@ const EditModal = ({ job, onClose, onEdit }: EditModalProps) => {
         </button>
       </div>
 
-      <div className="p-6">
+      <div className="p-6 overflow-y-auto custom-scrollbar">
         <JobForm job={job} onUpsert={onEdit} />
       </div>
     </Modal>

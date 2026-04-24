@@ -1,6 +1,6 @@
-import { flexRender } from "@tanstack/react-table";
 import { useState, useMemo, useRef, useEffect } from "react";
 import {
+  flexRender,
   getCoreRowModel,
   useReactTable,
   getSortedRowModel,
@@ -10,16 +10,27 @@ import {
   type SortingState,
 } from "@tanstack/react-table";
 import type { JobApplication } from "../../types/job";
+import ProfileView from "./ProfileView";
 
 interface TableProps {
   data: JobApplication[];
   columns: any[];
   globalFilter: string;
   statusFilter: string;
+  openEditModal: (job: JobApplication) => void;
+  handleDelete: (id: string) => void;
 }
 
-const Table = ({ data, columns, globalFilter, statusFilter }: TableProps) => {
+const Table = ({
+  data,
+  columns,
+  globalFilter,
+  statusFilter,
+  openEditModal,
+  handleDelete,
+}: TableProps) => {
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [selectedJob, setSelectedJob] = useState<JobApplication | null>(null);
   const lastCount = useRef(data.length);
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -44,7 +55,7 @@ const Table = ({ data, columns, globalFilter, statusFilter }: TableProps) => {
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    autoResetPageIndex: true, // This automatically handles "Add" and "Filter" by resetting to Page 1.
+    autoResetPageIndex: true,
     enableColumnFilters: true,
     enableGlobalFilter: true,
   });
@@ -72,78 +83,102 @@ const Table = ({ data, columns, globalFilter, statusFilter }: TableProps) => {
   }, [data]);
 
   return (
-    <div className="w-full flex-1 flex flex-col rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+    <div className="w-full flex-1 flex flex-col rounded-lg border border-gray-200 shadow-sm overflow-hidden relative">
       <div className="flex-1 overflow-auto min-h-0">
-      <table className="w-full border-collapse table-fixed bg-white min-w-[1020px]">
-        <thead className="sticky top-0 z-10">
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id} className="bg-slate-500 ">
-              {headerGroup.headers.map((header) => (
-                <th
-                  key={header.id}
-                  onClick={header.column.getToggleSortingHandler()}
-                  className="px-4 py-3 text-left text-sm font-semibold text-slate-100 cursor-pointer hover:bg-slate-600 transition-colors border-r border-slate-700"
-                  style={{ width: `${header.column.getSize()}px` }}
-                >
-                  <div className="flex items-center gap-2">
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext(),
-                    )}
-                    <span className="text-[10px]">
-                      {header.column.getIsSorted() === "asc" && " ▲"}
-                      {header.column.getIsSorted() === "desc" && " ▼"}
-                    </span>
-                  </div>
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-
-        <tbody className="divide-y divide-gray-200">
-          {table.getRowModel().rows.map((row) => {
-            const isRejected = row.original.status === "Rejected";
-
-            return (
-              <tr
-                key={row.id}
-                className={`
-                    transition-colors 
-                  ${isRejected ? "bg-gray-300 opacity-60" : "bg-white hover:bg-gray-50"}
-                  `}
-              >
-                {row.getVisibleCells().map((cell) => {
-                  const isTruncated = (cell.column.columnDef.meta as any)
-                    ?.truncate;
-
-                  return (
-                    <td
-                      key={cell.id}
-                      style={{ width: `${cell.column.getSize()}px` }}
-                      className={`
-                          px-4 py-2.5 text-sm text-gray-700 border-r border-gray-100 last:border-r-0 whitespace-nowrap
-                          ${isTruncated ? "truncate" : ""}
-                        `}
-                      title={
-                        isTruncated ? String(cell.getValue() ?? "") : undefined
-                      }
-                    >
+        <table className="w-full border-collapse table-fixed bg-white min-w-[1020px]">
+          <thead className="sticky top-0 z-10">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id} className="bg-slate-500">
+                {headerGroup.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    onClick={header.column.getToggleSortingHandler()}
+                    className="px-4 py-3 text-left text-sm font-semibold text-slate-100 cursor-pointer hover:bg-slate-600 transition-colors border-r border-slate-700"
+                    style={{ width: `${header.column.getSize()}px` }}
+                  >
+                    <div className="flex items-center gap-2">
                       {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
+                        header.column.columnDef.header,
+                        header.getContext(),
                       )}
-                    </td>
-                  );
-                })}
+                      <span className="text-[10px]">
+                        {header.column.getIsSorted() === "asc" && " ▲"}
+                        {header.column.getIsSorted() === "desc" && " ▼"}
+                      </span>
+                    </div>
+                  </th>
+                ))}
               </tr>
-            );
-          })}
-        </tbody>
-      </table>
+            ))}
+          </thead>
+
+          <tbody className="divide-y divide-gray-200">
+            {table.getRowModel().rows.map((row) => {
+              const isRejected = row.original.status === "Rejected";
+
+              return (
+                <tr
+                  key={row.id}
+                  onClick={() => setSelectedJob(row.original)}
+                  className={`
+                    transition-all cursor-pointer
+                    ${isRejected ? "bg-gray-300 opacity-60" : "bg-white hover:bg-blue-50/40"}
+                  `}
+                >
+                  {row.getVisibleCells().map((cell) => {
+                    const isTruncated = (cell.column.columnDef.meta as any)
+                      ?.truncate;
+
+                    return (
+                      <td
+                        key={cell.id}
+                        style={{ width: `${cell.column.getSize()}px` }}
+                        className={`px-4 py-2.5 text-sm text-gray-700 border-r border-gray-100 last:border-r-0 whitespace-nowrap ${isTruncated ? "truncate" : ""}`}
+                        title={
+                          isTruncated
+                            ? String(cell.getValue() ?? "")
+                            : undefined
+                        }
+                      >
+                        {/* STOP PROPAGATION: Prevents Drawer from opening when clicking select/links/buttons */}
+                        <div
+                          onClick={(e) => {
+                            const target = e.target as HTMLElement;
+                            if (
+                              target.tagName === "SELECT" ||
+                              target.tagName === "A" ||
+                              target.tagName === "BUTTON"
+                            ) {
+                              e.stopPropagation();
+                            }
+                          }}
+                        >
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
-      {/* PAGINATION CONTROLS */}
+      {/* --- SIDE DRAWER --- */}
+      {selectedJob && (
+        <ProfileView
+          selectedJob={selectedJob}
+          setSelectedJob={setSelectedJob}
+          openEditModal={openEditModal}
+          handleDelete={handleDelete}
+        />
+      )}
+
+      {/* PAGINATION CONTROLS  */}
       <div className="flex-none flex items-center justify-between p-3 bg-gray-50 border-t border-gray-200">
         <div className="text-xs text-gray-500">
           Showing{" "}

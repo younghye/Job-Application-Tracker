@@ -1,7 +1,8 @@
 import { createColumnHelper } from "@tanstack/react-table";
+import dayjs from "dayjs";
 import type { JobApplication } from "../../types/job";
 import { STATUS_OPTIONS } from "../../types/job";
-
+import { NoteIcon } from "../../assets/Icons";
 const columnHelper = createColumnHelper<JobApplication>();
 
 export const Columns = (
@@ -27,8 +28,19 @@ export const Columns = (
   }),
   columnHelper.accessor("jobTitle", {
     header: "Job Title",
-    size: 160,
-    meta: { truncate: true },
+    size: 190,
+    cell: (info) => {
+      const hasNote = !!info.row.original.note;
+      return (
+        <div className="flex items-center gap-2 group">
+          <span className="truncate text-slate-700" title={info.getValue()}>
+            {info.getValue()}
+          </span>
+
+          {hasNote && <NoteIcon title="Has notes" />}
+        </div>
+      );
+    },
   }),
   columnHelper.accessor("company", {
     header: "Company",
@@ -72,11 +84,43 @@ export const Columns = (
       </a>
     ),
   }),
-  columnHelper.accessor("note", {
-    header: "Note",
+  columnHelper.accessor("interviews", {
+    header: "Interviews",
     size: 210,
     enableSorting: false,
-    meta: { truncate: true },
+    cell: (info) => {
+      const interviews = info.getValue() || [];
+      if (interviews.length === 0) return;
+
+      const sorted = [...interviews].sort((a, b) =>
+        dayjs(a.date).diff(dayjs(b.date)),
+      );
+
+      // in the future or started within the last 2 hours
+      const next =
+        sorted.find((i) =>
+          dayjs(i.date).isAfter(dayjs().subtract(2, "hours")),
+        ) || sorted[sorted.length - 1];
+
+      const isUpcoming = dayjs(next.date).isAfter(dayjs());
+      const hoverText = `${next.type || "Interview"} • ${dayjs(next.date).format("MMM D, HH:mm")}`;
+
+      return (
+        <div className="flex items-center gap-2" title={hoverText}>
+          <span
+            className={` ${isUpcoming ? "text-emerald-700" : "text-slate-700"}`}
+          >
+            {`${next.type || "Interview"} • ${dayjs(next.date).format("MMM D, HH:mm")}`}
+          </span>
+
+          {interviews.length > 1 && (
+            <span className="text-[10px] font-bold text-indigo-400 bg-indigo-50 px-1.5 py-0.5 rounded-md shrink-0">
+              +{interviews.length - 1}
+            </span>
+          )}
+        </div>
+      );
+    },
   }),
   columnHelper.display({
     id: "actions",

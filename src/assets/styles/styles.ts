@@ -11,8 +11,8 @@ export const selectArrow = `
   .trim();
 
 export const inputClass =
-  "w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all";
+  "w-full px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all";
 
-export const labelClass = "text-sm font-bold text-gray-700";
+export const labelClass = "text-sm font-bold text-gray-700 mb-1 ";
 
 export const errorClass = "text-red-500 text-[11px] mt-1 font-bold";
