@@ -48,6 +48,8 @@ export const isJobPage = (url: string): boolean => {
       "/apply/",
       "/career/",
       "/careers/",
+      "careers.",
+      "career.",
     ];
     return jobPatterns.some((p) => urlLower.includes(p));
   } catch {

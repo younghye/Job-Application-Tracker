@@ -115,14 +115,20 @@ const Table = ({
           <tbody className="divide-y divide-gray-200">
             {table.getRowModel().rows.map((row) => {
               const isRejected = row.original.status === "Rejected";
-
+              const isOffer = row.original.status === "Offer";
               return (
                 <tr
                   key={row.id}
                   onClick={() => setSelectedJob(row.original)}
                   className={`
                     transition-all cursor-pointer
-                    ${isRejected ? "bg-gray-300 opacity-60" : "bg-white hover:bg-blue-50/40"}
+                    ${
+                      isRejected
+                        ? "bg-gray-100 opacity-60 grayscale"
+                        : isOffer
+                          ? "bg-green-50 hover:bg-green-100/80"
+                          : "bg-white hover:bg-blue-50/40"
+                    }
                   `}
                 >
                   {row.getVisibleCells().map((cell) => {

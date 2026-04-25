@@ -12,7 +12,7 @@ The extension runs silently in the background on supported job boards. When you 
 
 ### Side Panel
 
-Click the extension icon to open a side panel. It pre-fills a form with the job data extracted from the current page. Review and submit with one click, or edit any field before saving.
+Click the extension icon to open a side panel. It pre-fills a form with the job data extracted from the current page. Review and submit with one click, or edit any field before saving. The panel shows color-coded alerts for success, errors, warnings, and duplicate detection.
 
 ### Applications Table
 
@@ -20,20 +20,42 @@ A full-featured table of all tracked applications with:
 
 - Global search across all columns
 - Filter by status (Applied, Interviewing, Rejected, Offer)
+- Sortable columns with direction indicators
+- Pagination (15 rows per page)
 - Inline status updates via dropdown
-- Edit modal for modifying any field
-- Delete individual entries or clear all
-- CSV export (Excel-compatible UTF-8) and import with duplicate detection
+- Rejected and offer rows visually emphasized
+- Note indicator icon on job title when notes are present
+- Interview preview — shows next upcoming or most recent interview per row, with active interviews highlighted in green
+- Click any row to open the **Detail Sidebar**
+
+### Detail Sidebar
+
+A slide-in drawer that opens when you click a table row, showing:
+
+- Company name, job title, and clickable job link
+- Current status badge
+- Application date and notes
+- **Interview timeline** — vertical timeline with past (gray) and upcoming (amber) interviews, each showing type and date/time
+- Edit and Delete actions
+
+### Interview Tracking
+
+Each application can store multiple scheduled interviews. Per interview:
+
+- Type (e.g. "1st Interview", "Technical", "HR")
+- Date and time
 
 ### Dashboard Analytics
 
 Visual overview of your job search health:
 
+- **Period Total** — total applications in the selected period
 - **Ghosting Alert** — applications with "Applied" status that are 21+ days old
 - **Rejection Rate** — percentage of rejected applications
 - **Resume Strength** — interview-to-application conversion rate
-- **Volume Chart** — bar chart of daily application counts (weekly/monthly view with navigation)
+- **Volume Chart** — bar chart of daily application counts with weekly/monthly view and period navigation
 - **Status Funnel** — visual pipeline from Total Applied → Interviews → Rejected → Offers
+- **Upcoming Schedule** — next 3–5 upcoming interviews with company, type, and date/time
 
 ---
 
@@ -44,14 +66,15 @@ Job Listing Page
       │
       ▼
 Content Script (content.ts)
-  - Observes DOM & URL changes
-  - Extracts job title, company, link, date
-  - Uses CSS selectors + JSON-LD structured data
+  - Observes DOM mutations & URL changes via MutationObserver
+  - Main frame attempts extraction first (JSON-LD → CSS selectors)
+  - On failure, delegates to same-origin iframes (e.g. LinkedIn detail pane)
+  - Sends JOB_UPDATED message when title + company are found
       │
       ▼
 Background Service Worker (background.ts)
-  - Receives JOB_UPDATED message
-  - Deduplicates by jobId (hash of URL)
+  - Receives JOB_UPDATED from content script
+  - Deduplicates by jobId to prevent repeated relays
   - Relays data to side panel
   - Persists saves to chrome.storage.local
       │
@@ -61,6 +84,12 @@ Side Panel / Dashboard (React UI)
   - Manages form submission
   - Reads stored applications for table & charts
 ```
+
+**Extraction priority (per frame):**
+
+1. JSON-LD structured data (`<script type="application/ld+json">`) — most reliable
+2. Site-specific CSS selectors — for LinkedIn, Seek, Glassdoor, Indeed
+3. Generic fallbacks — `<h1>`, canonical link, `data-automation` attributes
 
 All data is stored locally in your browser via `chrome.storage.local`. There is no backend, no account, and no data sent anywhere.
 
@@ -87,20 +116,34 @@ All data is stored locally in your browser via `chrome.storage.local`. There is 
 
 ```
 src/
-├── background.ts          # Service worker — storage, message relay, deduplication
-├── content.ts             # Content script — DOM extraction, URL change detection
+├── background.ts          # Service worker — message relay, deduplication, tab management
+├── content.ts             # Content script — DOM extraction, URL change detection, iframe delegation
 ├── pages/
 │   ├── sidepanel/         # Side panel entry point and UI
-│   ├── applications/      # Applications table, columns, CSV service, edit modal
-│   ├── dashboard/         # Dashboard metrics, funnel, volume chart
-│   └── common/            # Shared Header and JobForm components
+│   ├── applications/
+│   │   ├── Applications.tsx     # Applications page root
+│   │   ├── Table.tsx            # Table with search, filter, sort, pagination
+│   │   ├── Columns.tsx          # Column definitions and interview display logic
+│   │   ├── DetailsSidebar.tsx   # Slide-in detail drawer with interview timeline
+│   │   ├── EditModal.tsx        # Edit application modal
+│   │   └── CsvService.ts        # CSV import/export logic
+│   ├── dashboard/
+│   │   ├── Dashboard.tsx        # Dashboard layout and metric calculations
+│   │   ├── MetricCard.tsx       # KPI cards (ghosting, rejection rate, etc.)
+│   │   ├── VolumeChart.tsx      # Bar chart with period navigation
+│   │   ├── FunnelStep.tsx       # Status funnel visualization
+│   │   ├── UpcomingSchedule.tsx # Upcoming interview list
+│   │   └── constants.ts         # Metric and funnel configuration
+│   └── common/
+│       ├── Header.tsx           # Shared navigation header
+│       └── JobForm.tsx          # Shared form (side panel, edit modal, detail sidebar)
 ├── hooks/
-│   └── useApplications.ts # Custom hook for reading from Chrome storage
+│   └── useApplications.ts # Custom hook — reads from Chrome storage with live updates
 ├── utils/
-│   ├── extractors.ts      # CSS selector strategies for job title/company
-│   └── jobUtils.ts        # Date normalization, job ID extraction, sorting
+│   ├── extractors.ts      # Job page detection, CSS selector strategies, JSON-LD parsing
+│   └── jobUtils.ts        # Job ID extraction, date normalization, sorting
 └── types/
-    └── job.ts             # JobApplication interface and STATUS_OPTIONS
+    └── job.ts             # JobApplication and Interview interfaces, STATUS_OPTIONS
 ```
 
 ---
@@ -150,6 +193,13 @@ interface JobApplication {
   date: string; // ISO format: YYYY-MM-DD
   status: string; // "Applied" | "Interviewing" | "Rejected" | "Offer"
   note?: string;
+  interviews?: Interview[];
+}
+
+interface Interview {
+  id: string; // UUID
+  type: string; // e.g. "1st Interview", "Technical", "HR"
+  date: string; // ISO datetime
 }
 ```
 
@@ -158,7 +208,7 @@ interface JobApplication {
 ## CSV Import/Export
 
 - **Export** generates a UTF-8 BOM CSV file (compatible with Excel) named `jobs_applications_export_YYYY-MM-DD.csv`
-- **Import** maps CSV headers back to fields and skips entries whose `jobId` already exists in storage
+- **Import** maps CSV headers back to fields, skips duplicates within the batch and against existing data (matched by `jobId`)
 
 ---
 

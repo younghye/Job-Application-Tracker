@@ -49,7 +49,7 @@ export const Columns = (
   }),
   columnHelper.accessor("status", {
     header: "Status",
-    size: 130,
+    size: 140,
     id: "status",
     cell: (info) => (
       <select
@@ -86,7 +86,7 @@ export const Columns = (
   }),
   columnHelper.accessor("interviews", {
     header: "Interviews",
-    size: 210,
+    size: 200,
     enableSorting: false,
     cell: (info) => {
       const interviews = info.getValue() || [];

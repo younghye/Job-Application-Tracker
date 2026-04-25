@@ -1,7 +1,7 @@
 import { isJobPage, extractJobLink, extractJobData } from "./utils/extractors";
 
 let lastUrl = "";
-let sentUrl = "";
+let isExtractionSuccessful = false;
 let isExtensionActive = false;
 const isMainFrame = window.self === window.top;
 
@@ -51,21 +51,23 @@ function notifySidePanel(attempts = 0) {
   // For same-origin iframes (e.g. LinkedIn's /preload/ detail pane), use the
   // parent frame's URL so we get the correct job link (with currentJobId param).
   const currentUrl = isMainFrame ? extractJobLink() : getParentUrl();
-
-  if (isMainFrame && !isJobPage(currentUrl)) {
-    chrome.runtime.sendMessage({ type: "JOB_UPDATED", payload: { job: null } });
+  if (!isJobPage(currentUrl)) {
+    if (isMainFrame)
+      chrome.runtime.sendMessage({
+        type: "JOB_UPDATED",
+        payload: { job: null },
+      });
     return;
   }
 
   const jobData = extractJobData(currentUrl);
   if (jobData?.jobTitle && jobData?.company) {
-    if (sentUrl === currentUrl) return;
-
-    sentUrl = currentUrl;
     chrome.runtime.sendMessage({
       type: "JOB_UPDATED",
       payload: { job: jobData },
     });
+  } else if (isExtractionSuccessful) {
+    return;
   } else if (attempts < 5) {
     // Main frame failed — ask iframes to extract
     if (isMainFrame)
@@ -85,7 +87,7 @@ const checkUrlChange = () => {
   const currentUrl = isMainFrame ? extractJobLink() : getParentUrl();
   if (currentUrl !== lastUrl) {
     lastUrl = currentUrl;
-    sentUrl = "";
+    isExtractionSuccessful = false;
     setTimeout(notifySidePanel, 800);
   }
 };
@@ -98,9 +100,13 @@ chrome.runtime.onMessage.addListener((msg, _, sendResponse) => {
     isExtensionActive = msg.isOpen;
     if (isExtensionActive && isMainFrame) {
       lastUrl = "";
-      sentUrl = "";
+      isExtractionSuccessful = false;
       notifySidePanel();
     }
+  }
+
+  if (msg.type === "EXTRACTION_SUCCEEDED") {
+    isExtractionSuccessful = true;
   }
 
   if (msg.type === "EXTRACT_NOW" && !isMainFrame) notifySidePanel();

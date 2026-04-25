@@ -49,11 +49,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ status: "duplicate" });
       return false;
     }
-    lastRelayedJobId = jobId;
 
     chrome.tabs.query({ active: true, currentWindow: true }, ([activeTab]) => {
       if (activeTab && sender.tab && activeTab.id === sender.tab.id) {
+        lastRelayedJobId = jobId;
         chrome.runtime.sendMessage(message);
+        if (jobId && sender.tab.id) {
+          chrome.tabs.sendMessage(sender.tab.id, {
+            type: "EXTRACTION_SUCCEEDED",
+          });
+        }
       }
     });
     sendResponse({ status: "relayed" });
