@@ -32,7 +32,7 @@ export const extractJobId = (url: string): string => {
     // We look for IDs in the ?query or the #hash part
     const combinedParams = searchParams + hashParams;
     const queryMatch = combinedParams.match(
-      /(?:currentjobid|jk|jl|gh_jid|jobid|job_id|postingid|joblistingid|post|src)=([a-z0-9]{10,})/,
+      /(?:currentjobid|jk|jl|gh_jid|jobid|job_id|postingid|joblistingid|post|src)=([a-z0-9]{6,})/i,
     );
     if (queryMatch) return queryMatch[1];
 
@@ -54,8 +54,11 @@ export const extractJobId = (url: string): string => {
     // 4. FALLBACK: HASH THE URL
     // If it's "1068083-frontend-developer" or any other messy string,
     // we don't save that as the ID. We hash the URL instead.
-    const cleanUrl = (urlObj.origin + urlObj.pathname).replace(/\/$/, "");
-    return "h-" + hashString(cleanUrl);
+    const fullUrl = (urlObj.origin + urlObj.pathname + urlObj.search).replace(
+      /\/$/,
+      "",
+    );
+    return "h-" + hashString(fullUrl.toLowerCase());
   } catch (e) {
     return "h-" + hashString(url.trim().toLowerCase());
   }

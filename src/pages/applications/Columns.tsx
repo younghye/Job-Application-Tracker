@@ -84,6 +84,10 @@ export const Columns = (
       </a>
     ),
   }),
+  columnHelper.accessor("note", {
+    header: "Note",
+    meta: { omitFromTable: true },
+  }),
   columnHelper.accessor("interviews", {
     header: "Interviews",
     size: 200,

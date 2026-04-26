@@ -10,6 +10,7 @@ export const isJobPage = (url: string): boolean => {
     "currentjobid=",
     "jobid=",
     "job_id=",
+    "jobId=",
     "joblistingid=",
     "vjk=",
     "jk=",
@@ -179,16 +180,15 @@ const extractFromJsonLd = (): {
 };
 
 export const extractJobLink = (): string => {
-  const url = window.location.href.toLowerCase();
-
   // Returns true if the URL points to a specific job (not a list/search page)
   const isSpecific = (u: string) =>
-    ["currentjobid", "jobid", "job_id", "/view/", "/job/", "/posting/"].some(
-      (p) => u.toLowerCase().includes(p),
+    ["currentjobid", "jobId", "jobid", "job_id", "/view/"].some((p) =>
+      u.toLowerCase().includes(p),
     );
+  if (isSpecific(window.location.href)) return window.location.href;
 
   // --- 1. SITE-SPECIFIC "ACTIVE" SELECTORS ---
-
+  const url = window.location.href.toLowerCase();
   // LinkedIn: active job card or detail pane title
   if (url.includes("linkedin")) {
     const el = document.querySelector(
@@ -200,7 +200,7 @@ export const extractJobLink = (): string => {
   // Seek: detail pane title, then active sidebar card
   if (url.includes("seek")) {
     const detailTitle = document.querySelector(
-      '[data-automation="job-detail-title"], [data-automation="jobTitle"]',
+      '[data-automation="job-detail-title"]',
     );
     const detailLink = (detailTitle?.querySelector("a") ||
       detailTitle?.closest("a")) as HTMLAnchorElement;

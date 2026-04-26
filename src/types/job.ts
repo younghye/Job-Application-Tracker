@@ -1,7 +1,6 @@
 export interface Interview {
-  id: string;
   date: string;
-  type: string; // e.g., "1st Interview", "Technical"
+  type: string;
 }
 
 export interface JobApplication {

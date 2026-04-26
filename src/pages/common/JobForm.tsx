@@ -132,7 +132,7 @@ const JobForm = ({ job, onUpsert }: JobFormProps) => {
             <button
               type="button"
               onClick={() =>
-                append({ id: crypto.randomUUID(), date: "", type: "" })
+                append({ date: "", type: "" })
               }
               className={`${labelClass} text-indigo-600 hover:text-indigo-700`}
             >

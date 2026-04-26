@@ -26,7 +26,14 @@ export const exportCSV = ({
 
         columns.forEach((col) => {
           if (!col.accessorKey) return;
-          let value = job[col.accessorKey as keyof JobApplication] || "";
+          let value: any = job[col.accessorKey as keyof JobApplication] || "";
+
+          if (col.accessorKey === "interviews") {
+            value =
+              Array.isArray(job.interviews) && job.interviews.length > 0
+                ? JSON.stringify(job.interviews)
+                : "";
+          }
 
           row[col.header] = value;
         });
@@ -84,7 +91,17 @@ export const importCSV = (
             if (!col.accessorKey) return;
 
             let value = row[col.header]?.trim() || "";
-            if (col.accessorKey === "date") value = normalizeDate(value);
+
+            if (col.accessorKey === "date") {
+              value = normalizeDate(value);
+            } else if (col.accessorKey === "interviews") {
+              try {
+                job[col.accessorKey] = value ? JSON.parse(value) : [];
+              } catch {
+                job[col.accessorKey] = [];
+              }
+              return;
+            }
 
             job[col.accessorKey] = value;
           });

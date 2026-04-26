@@ -23,6 +23,7 @@ const broadcastStatus = (isOpen: boolean) => {
 // Listen for the Side Panel connecting/disconnecting
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name === "sidepanel") {
+    lastRelayedJobId = "";
     broadcastStatus(true);
 
     port.onDisconnect.addListener(() => {

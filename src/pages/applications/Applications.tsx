@@ -221,7 +221,7 @@ const Applications = () => {
           />
         ) : (
           <div className="h-full flex items-center justify-center border-2 border-dashed border-gray-100 rounded-[24px]">
-            <p className="text-gray-400 font-medium text-lg">
+            <p className="text-sm font-semibold text-slate-400">
               No application data yet.
             </p>
           </div>
