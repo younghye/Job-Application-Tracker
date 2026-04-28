@@ -14,19 +14,28 @@ The extension runs silently in the background on supported job boards. When you 
 
 Click the extension icon to open a side panel. It pre-fills a form with the job data extracted from the current page. Review and submit with one click, or edit any field before saving. The panel shows color-coded alerts for success, errors, warnings, and duplicate detection.
 
+![Side Panel Extraction](./src/assets/images/SidePanel.png)
+
 ### Applications Table
 
 A full-featured table of all tracked applications with:
 
-- Global search across all columns
-- Filter by status (Applied, Interviewing, Rejected, Offer)
+- Global search and filter by status
 - Sortable columns with direction indicators
-- Pagination (15 rows per page)
 - Inline status updates via dropdown
 - Rejected and offer rows visually emphasized
 - Note indicator icon on job title when notes are present
 - Interview preview — shows next upcoming or most recent interview per row, with active interviews highlighted in green
 - Click any row to open the **Detail Sidebar**
+
+### CSV Import/Export
+
+- **Export** generates a UTF-8 BOM CSV file (compatible with Excel) named `jobs_applications_export_YYYY-MM-DD.csv`
+- **Import** maps CSV headers back to fields, skips duplicates within the batch and against existing data (matched by `jobId`)
+
+---
+
+![Application List](./src/assets/images/ApplicationList.png)
 
 ### Detail Sidebar
 
@@ -45,6 +54,8 @@ Each application can store multiple scheduled interviews. Per interview:
 - Type (e.g. "1st Interview", "Technical", "HR")
 - Date and time
 
+![DetailSidebar](./src/assets/images/DetailSidebar.png)
+
 ### Dashboard Analytics
 
 Visual overview of your job search health:
@@ -57,6 +68,7 @@ Visual overview of your job search health:
 - **Status Funnel** — visual pipeline from Total Applied → Interviews → Rejected → Offers
 - **Upcoming Schedule** — next 3–5 upcoming interviews with company, type, and date/time
 
+![Dashboard](./src/assets/images/Dashboard.png)
 ---
 
 ## How It Works
@@ -197,18 +209,10 @@ interface JobApplication {
 }
 
 interface Interview {
-  id: string; // UUID
   type: string; // e.g. "1st Interview", "Technical", "HR"
   date: string; // ISO datetime
 }
 ```
-
----
-
-## CSV Import/Export
-
-- **Export** generates a UTF-8 BOM CSV file (compatible with Excel) named `jobs_applications_export_YYYY-MM-DD.csv`
-- **Import** maps CSV headers back to fields, skips duplicates within the batch and against existing data (matched by `jobId`)
 
 ---
 
