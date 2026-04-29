@@ -253,13 +253,62 @@ export const extractJobLink = (): string => {
   return window.location.href;
 };
 
+/**
+ * Fallback for standalone pages where DOM elements are hidden or obfuscated.
+ * Parses the browser tab title (e.g., "Job Title | Company | LinkedIn").
+ */
+const extractFromTabTitle = (
+  currentTitle: string,
+  currentCompany: string,
+): { title: string; company: string } => {
+  const tabTitle = document.title;
+  let title = currentTitle;
+  let company = currentCompany;
+
+  // Robust split: handles " | ", " - ", or " – "
+  const parts = tabTitle.split(/\s*[|–-]\s+/).map((p) => p.trim());
+
+  if (parts.length >= 2) {
+    // Clean up notification bubbles like "(1) Senior Software Engineer"
+    const potentialTitle = parts[0].replace(/^\(\d+\)\s+/, "");
+    const potentialCompany = parts[1];
+
+    // Only fill title if missing and not generic junk
+    if (
+      !title &&
+      potentialTitle.length > 3 &&
+      !/login|jobs|search|welcome/i.test(potentialTitle)
+    ) {
+      title = potentialTitle;
+    }
+
+    // Only fill company if missing and not a job board name
+    if (
+      !company &&
+      potentialCompany &&
+      !/linkedin|indeed|seek|glassdoor|career/i.test(potentialCompany)
+    ) {
+      company = potentialCompany;
+    }
+  }
+
+  return { title, company };
+};
+
 export const extractJobData = (url: string | null): JobApplication | null => {
   try {
     const link = url || extractJobLink();
     const ld = extractFromJsonLd();
-    const jobTitle = ld?.title || extractJobTitle();
-    const company = ld?.company || extractCompany();
     const resolvedLink = ld?.link || link;
+
+    let jobTitle = ld?.title || extractJobTitle();
+    let company = ld?.company || extractCompany();
+
+    if (!jobTitle || !company) {
+      const fallback = extractFromTabTitle(jobTitle, company);
+      jobTitle = fallback.title;
+      company = fallback.company;
+    }
 
     return {
       id: crypto.randomUUID(),
