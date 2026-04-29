@@ -265,15 +265,20 @@ const extractFromTabTitle = (
   let title = currentTitle;
   let company = currentCompany;
 
-  // Robust split: handles " | ", " - ", or " – "
-  const parts = tabTitle.split(/\s*[|–-]\s+/).map((p) => p.trim());
+  // 1. Try splitting by Pipe (|) first - this is standard for LinkedIn
+  // It separates "Title - Context" from "Company"
+  let parts = tabTitle.split(/\s*\|\s+/).map((p) => p.trim());
+
+  // 2. Fallback: If no pipe, try the dashes
+  if (parts.length < 2) {
+    parts = tabTitle.split(/\s*[–-]\s+/).map((p) => p.trim());
+  }
 
   if (parts.length >= 2) {
-    // Clean up notification bubbles like "(1) Senior Software Engineer"
+    // Clean up "(1) " notifications
     const potentialTitle = parts[0].replace(/^\(\d+\)\s+/, "");
     const potentialCompany = parts[1];
 
-    // Only fill title if missing and not generic junk
     if (
       !title &&
       potentialTitle.length > 3 &&
@@ -282,7 +287,7 @@ const extractFromTabTitle = (
       title = potentialTitle;
     }
 
-    // Only fill company if missing and not a job board name
+    // Validation: Ensure potentialCompany isn't just "LinkedIn"
     if (
       !company &&
       potentialCompany &&

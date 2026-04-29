@@ -112,6 +112,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 const handleTabChange = (tab: chrome.tabs.Tab) => {
   if (!isPanelOpen) return;
+  lastRelayedJobId = "";
   const isRestricted =
     !tab.url ||
     tab.url.startsWith("chrome://") ||
@@ -119,7 +120,6 @@ const handleTabChange = (tab: chrome.tabs.Tab) => {
     tab.url.startsWith("about:");
 
   if (isRestricted) {
-    lastRelayedJobId = "";
     chrome.runtime.sendMessage({ type: "JOB_UPDATED", payload: { job: null } });
   } else if (tab.id) {
     // Wake up the content script
