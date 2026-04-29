@@ -1,15 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Job Application Tracker",
-  "version": "1.0",
-  "permissions": ["webNavigation", "storage", "scripting", "sidePanel", "tabs"],
-  "host_permissions": [
-    "https://*.linkedin.com/*",
-    "https://*.indeed.com/*",
-    "https://*.glassdoor.com/*",
-    "https://*.seek.com.au/*",
-    "https://*.seek.co.nz/*"
-  ],
+  "version": "1.0.1",
+  "permissions": ["storage", "sidePanel", "tabs"],
   "background": {
     "service_worker": "background.js",
     "type": "module"
@@ -26,6 +19,6 @@
     }
   ],
   "action": {
-    "default_title": "Open Job Tracker"
+    "default_title": "Open Job Application Tracker"
   }
 }
