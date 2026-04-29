@@ -2,33 +2,35 @@ type MetricConfigItem = {
   key: string;
   title: string;
   description: string;
-  suffix?: string;
+  value: string;
 };
 
-export const METRIC_CONFIG: MetricConfigItem[] = [
+export const getMetricConfig = (analytics: any): MetricConfigItem[] => [
   {
     key: "ghosted",
     title: "Ghosting Alert",
+    value: String(analytics.ghosted),
     description: "21+ days silent",
   },
   {
     key: "rejectionRate",
     title: "Rejection Rate",
-    description: "Direct Rejections",
-    suffix: "%",
+    value: `${analytics.rejectionRate}%`,
+    description: `${analytics.coldRejectRate}% CV Rejections`,
   },
   {
     key: "resumeStrength",
     title: "Resume Strength",
-    description: "Applied → Interview",
-    suffix: "%",
+    value: `${analytics.resumeStrength}%`,
+    description: "Applied → Interview Invite",
   },
   {
     key: "total",
     title: "Period Total",
+    value: String(analytics.total),
     description: "Total applications",
   },
-] as const;
+];
 
 export const FUNNEL_CONFIG = [
   { key: "total", label: "Total Applied", color: "bg-indigo-500" },

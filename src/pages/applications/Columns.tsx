@@ -70,7 +70,6 @@ export const Columns = (
   columnHelper.accessor("link", {
     header: "Link",
     size: 180,
-    enableSorting: false,
     meta: { truncate: true },
     cell: (info) => (
       <a
@@ -91,7 +90,6 @@ export const Columns = (
   columnHelper.accessor("interviews", {
     header: "Interviews",
     size: 200,
-    enableSorting: false,
     cell: (info) => {
       const interviews = info.getValue() || [];
       if (interviews.length === 0) return;

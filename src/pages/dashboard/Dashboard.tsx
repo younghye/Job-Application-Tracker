@@ -5,7 +5,7 @@ import MetricCard from "./MetricCard";
 import FunnelStep from "./FunnelStep";
 import VolumeChart from "./VolumeChart";
 import UpcomingSchedule from "./UpcomingSchedule";
-import { METRIC_CONFIG, FUNNEL_CONFIG } from "./constants";
+import { getMetricConfig, FUNNEL_CONFIG } from "./config";
 
 const Dashboard = () => {
   const [viewType, setViewType] = useState<"weekly" | "monthly">("weekly");
@@ -60,15 +60,14 @@ const Dashboard = () => {
       });
 
       // Analytics Calculation
-      const total = data.length;
 
       // Status counts
-      const getCount = (status: string) =>
-        data.filter((j) => j.status === status).length;
-
-      const interviews = getCount("Interviewing");
-      const rejects = getCount("Rejected");
-      const offers = getCount("Offer");
+      const total = data.length;
+      const interviews = data.filter(
+        (j) => j.interviews && j.interviews.length > 0,
+      ).length;
+      const rejects = data.filter((j) => j.status === "Rejected").length;
+      const offers = data.filter((j) => j.status === "Offer").length;
 
       // Ghosted: Applied > 21 days ago with no update
       const ghosted = data.filter((j) => {
@@ -79,6 +78,13 @@ const Dashboard = () => {
           jd.isBefore(now.subtract(21, "day"))
         );
       }).length;
+
+      const interviewRejects = data.filter(
+        (j) =>
+          j.status === "Rejected" && j.interviews && j.interviews.length > 0,
+      ).length;
+
+      const coldRejects = rejects - interviewRejects;
 
       // Upcoming Interviews
       const displayLimit = windowHeight > 850 ? 5 : 3;
@@ -100,26 +106,28 @@ const Dashboard = () => {
         upcomingInterviews,
         analytics: {
           total,
-          ghosted,
           interviews,
           rejects,
           offers,
+          ghosted,
           rejectionRate: total ? Math.round((rejects / total) * 100) : 0,
+          coldRejectRate: total ? Math.round((coldRejects / total) * 100) : 0,
           resumeStrength: total ? Math.round((interviews / total) * 100) : 0,
         },
       };
     }, [data, viewType, timeOffset, windowHeight]);
+  const metrics = getMetricConfig(analytics);
 
   return (
     <div className="flex-1 flex flex-col gap-8">
       {/* METRICS ROW */}
       <div className="shrink-0 h-auto lg:h-[17vh] lg:min-h-[120px] lg:max-h-[180px]">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 h-full">
-          {METRIC_CONFIG.map((conf) => (
+          {metrics.map((conf) => (
             <MetricCard
               key={conf.key}
               title={conf.title}
-              value={`${analytics[conf.key as keyof typeof analytics]}${conf.suffix || ""}`}
+              value={conf.value}
               description={conf.description}
               type={conf.key}
             />
