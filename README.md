@@ -2,6 +2,8 @@
 
 A Chrome extension that helps you track your job search — automatically captures job listings as you browse and gives you a dashboard to analyze your progress.
 
+https://chromewebstore.google.com/detail/job-application-tracker/hmmbogmddcjcndcdljkfijdfaekhildn
+
 ---
 
 ## Features
